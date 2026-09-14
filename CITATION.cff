@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use IntentTrace in your work, please cite it as below."
+title: "IntentTrace: A Reliability and Evaluation Framework for Hidden Information-Integrity Failures in Distributed Personalization Systems"
+abstract: >-
+  IntentTrace is an open, nonproprietary framework for detecting, reproducing,
+  tracing, and benchmarking hidden information-integrity failures in
+  personalization, recommendation, and AI-enabled distributed systems —
+  failures in which every service reports healthy while the information
+  driving the final decision is stale, missing, delayed, duplicated,
+  conflicting, or misinterpreted.
+type: software
+authors:
+  - family-names: Yellanki
+    given-names: Srinivas Kalyan
+repository-code: "https://github.com/syellanki09/intenttrace"
+license: Apache-2.0
+keywords:
+  - software reliability
+  - distributed systems
+  - personalization
+  - observability
+  - data provenance
+  - fault injection
+  - reproducible benchmarks
