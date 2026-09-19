@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Gradle / Kotlin
+.gradle/
+build/
+**/build/
+.kotlin/
+.kotlinc/
+local.properties
+
+# Java
+*.class
+hs_err_pid*
+
+# Logs / temporary files
+*.log
+tmp/
+.temp/
