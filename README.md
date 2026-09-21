@@ -14,14 +14,14 @@ IntentTrace targets that class of failure at the system level rather than asking
 
 IntentTrace addresses six failure classes, documented in [`docs/failure-taxonomy.md`](docs/failure-taxonomy.md):
 
-| Class | Short description |
-| --- | --- |
-| Stale context | Decision made on context that has been superseded |
-| Missing context | Expected context absent; system proceeds on defaults |
-| Delayed events | Context arrives after the decision that needed it |
-| Duplicate / replayed information | The same event applied more than once |
-| Conflicting values | Two sources disagree and the system picks silently |
-| Version / data-contract incompatibility | Producer and consumer disagree on shape or meaning |
+| ID | Class | Short description |
+| --- | --- | --- |
+| `stale-context` | Stale context | Decision made on context that has been superseded |
+| `missing-context` | Missing context | Expected context absent; system proceeds on defaults |
+| `delayed-events` | Delayed events | Eligible context arrives after the decision that needed it |
+| `duplicate-replay` | Duplicate / replayed information | The same logical event is applied more than once or older state is replayed |
+| `conflicting-values` | Conflicting values | Two sources disagree and the system resolves the conflict silently |
+| `contract-incompatibility` | Version / data-contract incompatibility | Producer and consumer disagree on data shape or meaning |
 
 For each class, the framework aims to provide:
 
@@ -53,9 +53,10 @@ benchmarks/            scenario definitions, harness, and reference results
 
 ## Status
 
-Prototype under active development. This repository currently contains the project description, scope, and failure taxonomy; the reference implementation, injectors, and benchmark harness are in progress.
+Prototype under active development.
 
-No external adoption or third-party use is claimed.
+The repository currently defines the project scope, canonical failure taxonomy, reference architecture, scenario contract, and benchmark methodology. The
+executable reference pipeline, deterministic fault injectors, provenance model, and benchmark harness are the next implementation milestones.
 
 ## Related work
 

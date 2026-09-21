@@ -17,7 +17,7 @@ The comparison should isolate the effect of the injected condition rather than c
 
 ## Required scenario metadata
 
-Every benchmark result should record:
+Every published benchmark result must record:
 
 - scenario name and version;
 - source commit SHA;
@@ -29,7 +29,10 @@ Every benchmark result should record:
 - expected invariant;
 - observed outcome;
 - whether the failure was detected;
-- provenance fields required to explain the result.
+- provenance fields required to explain the result; 
+- canonical failure-class ID;
+- latest eligible state at the decision boundary;
+- state actually used by the decision.
 
 ## Core measurements
 

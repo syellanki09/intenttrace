@@ -50,13 +50,18 @@ Defines scenario configuration, expected invariants, execution harnesses, raw re
 
 ## Scenario contract
 
-Every executable scenario should define:
+Every executable scenario must define:
 
+- **Scenario ID** - stable machine-readable identifier for the scenario.
+- **Failure class** - one canonical failure-class ID from
+  [`failure-taxonomy.md`](failure-taxonomy.md).
 - **Invariant** - the condition that must hold in a correct execution.
 - **Control** - a healthy execution where the invariant holds.
 - **Injection** - the deterministic change that creates the failure.
+- **Decision boundary** - the point at which eligible context is evaluated for the decision.
 - **Expected signature** - the observable evidence that the invariant was violated.
-- **Detection rule** - how IntentTrace identifies or explains the divergence.
+- **Detection rule** - how IntentTrace mechanically identifies the divergence.
+- **Provenance requirements** - the minimum information needed to reconstruct the decision.
 - **Reproduction metadata** - seed, configuration, environment, and source commit.
 
 ## Initial scenario: stale context

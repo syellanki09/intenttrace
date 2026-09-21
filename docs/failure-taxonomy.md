@@ -19,6 +19,23 @@ Two consequences follow, and they motivate the taxonomy:
 
 Each class below is stated as an invariant that the system violates, which is what makes it mechanically testable.
 
+### Canonical class identifiers
+
+Benchmark scenarios, injectors, result records, and documentation use the following
+stable identifiers for the six top-level failure classes:
+
+| ID | Failure class |
+| --- | --- |
+| `stale-context` | Stale context |
+| `missing-context` | Missing context |
+| `delayed-events` | Delayed events |
+| `duplicate-replay` | Duplicate / replayed information |
+| `conflicting-values` | Conflicting values |
+| `contract-incompatibility` | Version / data-contract incompatibility |
+
+These identifiers remain stable even if the explanatory text or individual
+failure mechanisms evolve.
+
 ---
 
 ### 1. Stale context
@@ -75,7 +92,7 @@ Each class below is stated as an invariant that the system violates, which is wh
 
 ---
 
-### 4. Duplicate and replayed information
+### 4. Duplicate / replayed information
 
 **Invariant.** Applying the same event more than once has the same effect as applying it once.
 
@@ -111,7 +128,7 @@ Each class below is stated as an invariant that the system violates, which is wh
 
 ---
 
-### 6. Version and data-contract incompatibility
+### 6. Version / data-contract incompatibility
 
 **Invariant.** Producer and consumer agree on both the shape and the meaning of the data they exchange.
 
