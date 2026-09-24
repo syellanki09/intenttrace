@@ -6,7 +6,7 @@ An open, nonproprietary reliability and evaluation framework for detecting, repr
 
 Conventional availability monitoring tells you whether a service is online and responding. It does not tell you whether the *right information* survived the full path from a user's action to the final result.
 
-A personalization system can report healthy uptime on every service while the context reaching the ranking or recommendation step is stale, missing, delayed, duplicated, or contradicted by another source. The user sees an irrelevant or inconsistent result. The engineering team sees a system that appears to be working. Failures of this kind are difficult to diagnose precisely because they leave no crash and no error to measure.
+A personalization system can report healthy uptime on every service while the information used by a decision violates one of the six integrity classes defined below. The user sees an irrelevant or inconsistent result. The engineering team sees a system that appears to be working. Failures of this kind are difficult to diagnose precisely because they leave no crash and no error to measure.
 
 IntentTrace targets that class of failure at the system level rather than asking only whether an individual service, database, or model is available.
 

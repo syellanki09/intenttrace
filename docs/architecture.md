@@ -4,7 +4,7 @@
 
 ## Purpose
 
-IntentTrace studies information-integrity failures in distributed personalization, recommendation, and AI-enabled systems: cases where services remain available and responsive while a decision is produced from stale, missing, delayed, duplicated, conflicting, or incompatible information.
+IntentTrace studies information-integrity failures in distributed personalization, recommendation, and AI-enabled systems: the six information-integrity failure classes defined in [`failure-taxonomy.md`](failure-taxonomy.md), where services remain available and responsive while the resulting decision is incorrect or insufficiently grounded.
 
 The reference architecture is intentionally small, synthetic, and deterministic so that failure scenarios can be reproduced from a clean checkout without proprietary infrastructure or data.
 
@@ -14,8 +14,8 @@ The reference architecture is intentionally small, synthetic, and deterministic 
 2. **Deterministic injection.** Faults use explicit configuration and seeds so the same scenario can be replayed.
 3. **Decision-level provenance.** A result records the contextual inputs, versions, timing, and transformations that produced it.
 4. **Synthetic and clean-room.** Workloads, reference components, and scenarios are independently constructed from public concepts.
-5. **Framework neutral.** The core benchmark model should not depend on a commercial personalization or AI provider.
-6. **Reproducible by default.** A clean checkout should be enough to run the reference scenarios.
+5. **Framework neutral.** The core benchmark model does not depend on a commercial personalization or AI provider.
+6. **Reproducible by default.** A clean checkout is sufficient to run the reference scenarios.
 
 ## Logical flow
 
@@ -37,7 +37,7 @@ flowchart LR
 Produces deterministic synthetic users, context versions, events, timestamps, and scenario inputs.
 
 ### `pipeline/`
-Provides the clean-room reference path from generated context/events to a decision. The first implementation should remain intentionally simple so the failure mechanism is observable.
+Provides the clean-room reference path from generated context/events to a decision. The first implementation remains small so that the failure mechanism stays observable.
 
 ### `injectors/`
 Contains one deterministic injector per supported failure class. An injector modifies the scenario state without changing the correctness invariant being evaluated.
@@ -70,7 +70,7 @@ The first reference implementation targets the stale-context invariant already d
 
 > A decision reflects the most recent context committed before the decision point.
 
-The scenario should create context `v1`, make it visible to the decision path, commit `v2`, deliberately hold the decision path on `v1`, and then record both the version used and the latest version available at decision time.
+The scenario creates context `v1`, makes it visible to the decision path, commits `v2`, deliberately holds the decision path on `v1`, and records both the version used and the latest version available at decision time.
 
 ## Non-goals
 
@@ -83,4 +83,4 @@ The reference implementation is not intended to:
 
 ## Evolution
 
-Architecture changes should be justified by a scenario, reproducibility requirement, or independently observed usability need. New components should not be added only to make the framework appear more complete.
+Architecture changes require a scenario, reproducibility requirement, or independently observed usability need. Components are added when they make a failure measurable, reproducible, or easier to diagnose—not to increase the apparent size of the framework.

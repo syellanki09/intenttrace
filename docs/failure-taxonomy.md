@@ -4,7 +4,7 @@
 
 ## Purpose and scope
 
-This document classifies failures in which a distributed personalization or recommendation system remains available and responsive while operating on information that is stale, absent, mistimed, duplicated, contradictory, or misinterpreted.
+This document defines six information-integrity failure classes for distributed personalization and recommendation systems that remain available and responsive while producing a decision from incorrect or insufficient state.
 
 These failures share a property that makes them hard to manage: **the signals conventional monitoring collects are normal throughout.** Every service reports success. Latency is within bounds. Error rates are flat. The defect appears only in the *content* of the final decision, which most production monitoring does not evaluate.
 
@@ -48,6 +48,8 @@ failure mechanisms evolve.
 
 **Why monitoring misses it.** A cache hit on stale data is indistinguishable from a cache hit on fresh data. It is faster than a miss, so latency metrics improve as correctness degrades.
 
+**Operational note.** Cache expiration is not the same thing as decision freshness. A Redis-style TTL can still consider an entry valid even after a newer context version has been committed. For that reason, IntentTrace carries the logical context version and commit time through the decision path instead of inferring freshness from cache hit/miss behavior or request latency.
+
 **Observable signature.** Decision timestamp is later than a context commit that the decision did not incorporate.
 
 **Injection approach.** Pin a cache entry, or hold a replica behind, across a context update, then issue a decision request.
@@ -84,6 +86,8 @@ failure mechanisms evolve.
 
 **Why monitoring misses it.** Pipeline metrics measure throughput and eventual delivery, both of which look healthy. The lag is often well within alerting thresholds yet far outside the window that matters for a live session.
 
+**Operational note.** In Kafka-style event pipelines, consumer lag is useful for operating the stream but does not answer the decision-level question: did this event become available before the decision that needed it? IntentTrace therefore keeps event time, ingestion time, and decision time separate rather than collapsing them into one timestamp.
+
 **Observable signature.** Event-time precedes decision time; ingestion time follows it.
 
 **Injection approach.** Introduce a controlled delay between event emission and availability, sweeping the delay across the session duration.
@@ -101,6 +105,8 @@ failure mechanisms evolve.
 **Mechanisms.** At-least-once delivery without deduplication; consumer restart replaying from a checkpoint; retry after a timed-out write that actually succeeded; backfill overlapping live traffic.
 
 **Why monitoring misses it.** Duplicate processing is successful processing. It raises throughput. Nothing in the delivery path treats it as anomalous.
+
+**Operational note.** At-least-once delivery makes redelivery a normal operating condition. The correctness requirement is not that a consumer never sees the same logical event twice; it is that reapplying that event cannot incorrectly change the resulting state. Offset rewinds, retries after ambiguous writes, and backfills that overlap live traffic are therefore modeled as distinct replay sources. Scenarios retain both logical event identity and ordering metadata so deduplication and recency handling can be evaluated separately.
 
 **Observable signature.** More than one application of the same logical event identity; or an ordering inversion where an older value overwrites a newer one after a replay.
 
@@ -137,6 +143,8 @@ failure mechanisms evolve.
 **Mechanisms.** A shared SDK upgraded on some clients and not others; a field whose units change without a name change; an enum gaining a member older consumers map to a default; optional fields added and silently ignored; mixed SDK versions across web and mobile.
 
 **Why monitoring misses it.** Deserialization succeeds. The value is in range. Semantic drift produces no parse error and no schema violation — only a wrong answer.
+
+**Operational note.** Syntactic compatibility does not guarantee semantic compatibility. A JSON field can continue to parse while its unit or meaning changes, and a Protobuf enum can gain a value that an older client sends down an unknown or default path. IntentTrace therefore compares decisions across client and contract versions rather than treating successful deserialization as proof of compatibility.
 
 **Observable signature.** The same logical input produces divergent decisions across client versions, or across web and mobile clients on the same account state.
 

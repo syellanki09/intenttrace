@@ -1,6 +1,6 @@
 # IntentTrace Benchmark Methodology
 
-**Status:** methodology draft. Numerical results should not be treated as reference results until the corresponding scenario and release are tagged.
+**Status:** methodology draft. Numerical results become reference results only when the corresponding scenario and source release are tagged.
 
 ## Objective
 
@@ -13,7 +13,7 @@ Each benchmark consists of paired executions:
 1. **Control execution** - the correctness invariant is preserved.
 2. **Injected execution** - one specific failure mechanism is introduced deterministically.
 
-The comparison should isolate the effect of the injected condition rather than compare unrelated architectures or providers.
+The comparison isolates the injected condition; it does not compare unrelated architectures or providers.
 
 ## Required scenario metadata
 
@@ -36,7 +36,7 @@ Every published benchmark result must record:
 
 ## Core measurements
 
-Initial benchmarks should emphasize:
+Initial benchmarks measure:
 
 ### Invariant correctness
 Did the final decision satisfy the scenario's stated invariant?
@@ -52,9 +52,9 @@ Does the same scenario configuration and seed reproduce the expected control and
 
 ## Result reporting
 
-Results should be published in machine-readable form (for example JSONL or CSV) together with a short human-readable summary. Reports should preserve raw measurements rather than only rounded values used in prose or charts.
+Tagged reference releases publish results in machine-readable form, such as JSONL or CSV, together with a short human-readable summary. Raw measurements are preserved alongside any rounded values used in prose or charts.
 
-A result record should distinguish:
+A result record distinguishes:
 
 - expected state;
 - observed state;
@@ -64,11 +64,11 @@ A result record should distinguish:
 
 ## Repetition and uncertainty
 
-When a scenario includes nondeterministic timing, concurrency, or sampling, the benchmark should use a documented number of repetitions and report an appropriate uncertainty summary. Fully deterministic scenarios should state why repeated runs are or are not informative.
+When a scenario includes nondeterministic timing, concurrency, or sampling, the benchmark uses a documented number of repetitions and reports an appropriate uncertainty summary. Fully deterministic scenarios document whether repeated execution adds useful information.
 
 ## Reproduction standard
 
-A published reference result should include:
+A published reference result includes:
 
 ```text
 exact source tag or commit
