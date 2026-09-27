@@ -37,7 +37,10 @@ flowchart LR
 Produces deterministic synthetic users, context versions, events, timestamps, and scenario inputs.
 
 ### `pipeline/`
-Provides the clean-room reference path from generated context/events to a decision. The first implementation remains small so that the failure mechanism stays observable.
+
+Provides the clean-room reference path from versioned context to a decision.
+
+The implementation separates context history from context resolution. `ContextStore` records the versions that were available at a decision boundary, while `ContextResolver` selects the version actually supplied to the decision path. This separation allows a benchmark to force an older read without rewriting the underlying history, so the decision can report both the state used and the latest state that was eligible.
 
 ### `injectors/`
 Contains one deterministic injector per supported failure class. An injector modifies the scenario state without changing the correctness invariant being evaluated.
