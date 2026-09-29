@@ -40,7 +40,7 @@ A second area of focus is the reliability of **software development kits and oth
 
 ## Repository layout
 
-Planned structure as the reference implementation lands:
+Current and planned structure:
 
 ```
 docs/                  failure taxonomy, architecture notes, benchmark methodology
@@ -55,8 +55,13 @@ benchmarks/            scenario definitions, harness, and reference results
 
 Prototype under active development.
 
-The repository currently defines the project scope, canonical failure taxonomy, reference architecture, scenario contract, and benchmark methodology. The
-executable reference pipeline, deterministic fault injectors, provenance model, and benchmark harness are the next implementation milestones.
+The repository currently includes the canonical failure taxonomy, reference architecture, benchmark methodology, a versioned context model, and an executable reference decision pipeline with deterministic tests.
+
+The pipeline records both the context version used by a decision and the latest version eligible at the decision boundary, and it explicitly marks fallback decisions caused by missing context as degraded.
+
+The next implementation milestones are deterministic fault injection, invariant evaluation, structured provenance output, and the benchmark harness.
+
+No external adoption or third-party use is claimed.
 
 ## Related work
 
