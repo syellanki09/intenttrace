@@ -24,9 +24,12 @@ interface ContextStore {
 /**
  * Deterministic in-memory store used by the reference pipeline and benchmarks.
  *
- * Context versions are kept independently from the resolution policy so a
- * fault injector can later force an older read without changing the store's
- * view of what was actually available.
+ * This implementation is deliberately single-threaded. Benchmark scenarios
+ * control execution order explicitly rather than introducing synchronization
+ * behavior into the reference store.
+ *
+ * Context history is independent from resolution policy so a fault injector
+ * can force an older read without changing what was actually available.
  */
 class InMemoryContextStore : ContextStore {
 
@@ -38,8 +41,39 @@ class InMemoryContextStore : ContextStore {
             mutableListOf()
         }
 
-        require(versions.none { it.version == context.version }) {
-            "Context ${context.id} version ${context.version} already exists"
+        require(
+            versions.none {
+                it.version == context.version
+            }
+        ) {
+            "Context ${context.id} version " +
+                    "${context.version} already exists"
+        }
+
+        versions.forEach { existing ->
+            when {
+                context.version > existing.version -> {
+                    require(
+                        !context.committedAt.isBefore(
+                            existing.committedAt
+                        )
+                    ) {
+                        "Higher context version cannot be committed " +
+                                "before a lower version"
+                    }
+                }
+
+                context.version < existing.version -> {
+                    require(
+                        !context.committedAt.isAfter(
+                            existing.committedAt
+                        )
+                    ) {
+                        "Lower context version cannot be committed " +
+                                "after a higher version"
+                    }
+                }
+            }
         }
 
         versions += context
@@ -50,7 +84,9 @@ class InMemoryContextStore : ContextStore {
         version: Long
     ): Context? =
         contextsById[contextId]
-            ?.firstOrNull { it.version == version }
+            ?.firstOrNull {
+                it.version == version
+            }
 
     override fun latestEligible(
         contextId: String,
@@ -58,9 +94,14 @@ class InMemoryContextStore : ContextStore {
     ): Context? =
         contextsById[contextId]
             ?.asSequence()
-            ?.filter { !it.committedAt.isAfter(decidedAt) }
+            ?.filter {
+                !it.committedAt.isAfter(decidedAt)
+            }
             ?.maxWithOrNull(
-                compareBy<Context> { it.committedAt }
-                    .thenBy { it.version }
+                compareBy<Context> {
+                    it.committedAt
+                }.thenBy {
+                    it.version
+                }
             )
 }

@@ -12,7 +12,7 @@ import java.time.Instant
  *
  * Context storage and resolution are deliberately separate. The store records
  * what context existed at the decision boundary, while the resolver determines
- * what context the decision actually receives.
+ * what context the decision path actually receives.
  */
 class ReferencePipeline(
     private val contextStore: ContextStore,
@@ -39,19 +39,39 @@ class ReferencePipeline(
                 contextId = contextId,
                 decidedAt = decidedAt
             )
-                ?: error(
-                    "No eligible context found for $contextId at $decidedAt"
-                )
+
+        if (latestEligible == null) {
+            return Decision(
+                id = decisionId,
+                contextId = contextId,
+                usedContextVersion = null,
+                latestEligibleContextVersion = null,
+                decidedAt = decidedAt,
+                outcome = "default",
+                degradationReason =
+                    DegradationReason.NO_ELIGIBLE_CONTEXT
+            )
+        }
 
         val usedContext =
             contextResolver.resolve(
                 contextId = contextId,
                 decidedAt = decidedAt
             )
-                ?: error(
-                    "Context resolver returned no context " +
-                            "for $contextId at $decidedAt"
-                )
+
+        if (usedContext == null) {
+            return Decision(
+                id = decisionId,
+                contextId = contextId,
+                usedContextVersion = null,
+                latestEligibleContextVersion =
+                    latestEligible.version,
+                decidedAt = decidedAt,
+                outcome = "default",
+                degradationReason =
+                    DegradationReason.CONTEXT_UNAVAILABLE
+            )
+        }
 
         require(usedContext.id == contextId) {
             "Resolved context id ${usedContext.id} " +
@@ -62,21 +82,28 @@ class ReferencePipeline(
             "Decision cannot precede the used context commit"
         }
 
+        require(
+            contextStore.find(
+                contextId = contextId,
+                version = usedContext.version
+            ) == usedContext
+        ) {
+            "Resolved context must belong to the context history"
+        }
+
         val preferredCategory =
             usedContext.attributes["preferredCategory"]
-
-        val degraded = preferredCategory == null
 
         return Decision(
             id = decisionId,
             contextId = contextId,
             usedContextVersion = usedContext.version,
-            latestEligibleContextVersion = latestEligible.version,
+            latestEligibleContextVersion =
+                latestEligible.version,
             decidedAt = decidedAt,
             outcome = preferredCategory ?: "default",
-            degraded = degraded,
             degradationReason =
-                if (degraded) {
+                if (preferredCategory == null) {
                     DegradationReason.MISSING_PREFERRED_CATEGORY
                 } else {
                     null

@@ -52,6 +52,7 @@ class ReferencePipelineTest {
 
         assertFalse(decision.degraded)
         assertNull(decision.degradationReason)
+        assertFalse(decision.freshnessViolated)
     }
 
     @Test
@@ -133,6 +134,10 @@ class ReferencePipelineTest {
         )
 
         assertEquals("travel", decision.outcome)
+        assertTrue(decision.freshnessViolated)
+
+        assertFalse(decision.degraded)
+        assertNull(decision.degradationReason)
     }
 
     @Test
@@ -182,7 +187,7 @@ class ReferencePipelineTest {
     }
 
     @Test
-    fun `decision fails when no context was eligible`() {
+    fun `no eligible context produces degraded decision`() {
         val store = InMemoryContextStore()
 
         store.save(
@@ -195,16 +200,80 @@ class ReferencePipelineTest {
 
         val pipeline = ReferencePipeline(store)
 
-        assertFailsWith<IllegalStateException> {
-            pipeline.decide(
-                decisionId = "decision-001",
-                contextId = "user-001",
-                decidedAt =
-                    Instant.parse(
-                        "2026-01-01T00:00:01Z"
-                    )
+        val decision = pipeline.decide(
+            decisionId = "decision-001",
+            contextId = "user-001",
+            decidedAt =
+                Instant.parse(
+                    "2026-01-01T00:00:01Z"
+                )
+        )
+
+        assertEquals("default", decision.outcome)
+
+        assertTrue(decision.degraded)
+
+        assertEquals(
+            DegradationReason.NO_ELIGIBLE_CONTEXT,
+            decision.degradationReason
+        )
+
+        assertNull(decision.usedContextVersion)
+
+        assertNull(
+            decision.latestEligibleContextVersion
+        )
+
+        assertFalse(decision.freshnessViolated)
+    }
+
+    @Test
+    fun `unavailable resolved context produces degraded decision`() {
+        val store = InMemoryContextStore()
+
+        store.save(
+            context(
+                version = 1,
+                committedAt = "2026-01-01T00:00:01Z",
+                preferredCategory = "travel"
             )
-        }
+        )
+
+        val unavailableResolver =
+            ContextResolver { _, _ -> null }
+
+        val pipeline =
+            ReferencePipeline(
+                contextStore = store,
+                contextResolver = unavailableResolver
+            )
+
+        val decision = pipeline.decide(
+            decisionId = "decision-001",
+            contextId = "user-001",
+            decidedAt =
+                Instant.parse(
+                    "2026-01-01T00:00:02Z"
+                )
+        )
+
+        assertEquals("default", decision.outcome)
+
+        assertTrue(decision.degraded)
+
+        assertEquals(
+            DegradationReason.CONTEXT_UNAVAILABLE,
+            decision.degradationReason
+        )
+
+        assertNull(decision.usedContextVersion)
+
+        assertEquals(
+            1L,
+            decision.latestEligibleContextVersion
+        )
+
+        assertFalse(decision.freshnessViolated)
     }
 
     private fun context(

@@ -40,6 +40,7 @@ Initial benchmarks measure:
 
 ### Invariant correctness
 Did the final decision satisfy the scenario's stated invariant?
+Ground truth and detection are recorded separately. The scenario harness determines whether the invariant was actually violated from controlled benchmark state. Detection records whether the system under test independently surfaced that condition. Harness knowledge of a violation is not itself counted as detection.
 
 ### Detection
 Did the framework identify that the information used by the decision diverged from the expected information state?

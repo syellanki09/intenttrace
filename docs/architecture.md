@@ -75,6 +75,23 @@ The first reference implementation targets the stale-context invariant already d
 
 The scenario creates context `v1`, makes it visible to the decision path, commits `v2`, deliberately holds the decision path on `v1`, and records both the version used and the latest version available at decision time.
 
+## Error model
+
+The reference pipeline distinguishes programming errors from information-integrity failures.
+
+Programming errors and invalid benchmark construction fail immediately. Examples include blank identifiers, a resolver returning context for the wrong identity, a resolver returning context that is not part of the recorded history, and logically inconsistent context version ordering.
+
+Information-integrity failures remain representable as successful decisions. Missing or unavailable context produces a degraded decision with an explicit `DegradationReason` rather than an infrastructure exception.
+
+Staleness is different. `Decision.freshnessViolated` represents benchmark ground truth: the context actually used was not the latest context eligible at the decision boundary. It does not indicate that the system under test detected the violation.
+
+Detection is evaluated separately from ground truth. A benchmark therefore distinguishes:
+
+- whether an invariant was actually violated; and
+- whether the system under test emitted a signal indicating that it noticed the violation.
+
+Keeping those concepts separate allows IntentTrace to measure silent failures rather than treating knowledge available to the benchmark harness as knowledge available to the evaluated system.
+
 ## Non-goals
 
 The reference implementation is not intended to:
