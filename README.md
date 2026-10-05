@@ -1,5 +1,7 @@
 # IntentTrace
 
+[![CI](https://github.com/syellanki09/intenttrace/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/syellanki09/intenttrace/actions/workflows/ci.yml)
+
 An open, nonproprietary reliability and evaluation framework for detecting, reproducing, tracing, and benchmarking **hidden information-integrity failures** in personalization, recommendation, and increasingly AI-enabled distributed systems.
 
 ## The problem
