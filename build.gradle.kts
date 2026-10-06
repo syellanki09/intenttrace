@@ -1,32 +1,15 @@
 plugins {
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.2.20" apply false
 }
 
 group = "io.intenttrace"
 version = "0.1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    group = rootProject.group
+    version = rootProject.version
 
-dependencies {
-    testImplementation(kotlin("test"))
-}
-
-kotlin {
-    jvmToolchain(17)
-
-    sourceSets {
-        main {
-            kotlin.srcDir("pipeline/src/main/kotlin")
-        }
-
-        test {
-            kotlin.srcDir("pipeline/src/test/kotlin")
-        }
+    repositories {
+        mavenCentral()
     }
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
