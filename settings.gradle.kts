@@ -4,4 +4,7 @@ plugins {
 
 rootProject.name = "intenttrace"
 
-include("pipeline")
+include(
+    "pipeline",
+    "injectors"
+)
