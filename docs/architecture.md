@@ -31,10 +31,10 @@ flowchart LR
     E --> R[Benchmark result]
 ```
 
-## Planned components
+## Components
 
 ### `generator/`
-Produces deterministic synthetic users, context versions, events, timestamps, and scenario inputs.
+Planned: produces deterministic synthetic users, context versions, events, timestamps, and scenario inputs.
 
 ### `pipeline/`
 
@@ -43,13 +43,15 @@ Provides the clean-room reference path from versioned context to a decision.
 The implementation separates context history from context resolution. `ContextStore` records the versions that were available at a decision boundary, while `ContextResolver` selects the version actually supplied to the decision path. This separation allows a benchmark to force an older read without rewriting the underlying history, so the decision can report both the state used and the latest state that was eligible.
 
 ### `injectors/`
-Contains one deterministic injector per supported failure class. An injector modifies the scenario state without changing the correctness invariant being evaluated.
+The first implemented injector, `StaleContextResolver`, implements `ContextResolver` and selects an explicitly pinned older eligible context version for the decision path. It never modifies the underlying context history: `ContextStore` remains the source of benchmark ground truth and continues to report the true latest eligible version.
+
+Invalid injection configurations fail immediately, including missing pinned versions, versions committed after the decision boundary, and versions that are not older than the latest eligible version. Additional injectors are planned for other failure classes.
 
 ### `provenance/`
-Records the information used by the decision, including identifiers, versions, timestamps, transformations, degraded/fallback states, and outcome metadata needed for diagnosis.
+Planned: records the information used by the decision, including identifiers, versions, timestamps, transformations, degraded/fallback states, and outcome metadata needed for diagnosis.
 
 ### `benchmarks/`
-Defines scenario configuration, expected invariants, execution harnesses, raw result formats, and reference results.
+Planned: defines scenario configuration, expected invariants, execution harnesses, raw result formats, and reference results.
 
 ## Scenario contract
 
@@ -73,7 +75,14 @@ The first reference implementation targets the stale-context invariant already d
 
 > A decision reflects the most recent context committed before the decision point.
 
-The scenario creates context `v1`, makes it visible to the decision path, commits `v2`, deliberately holds the decision path on `v1`, and records both the version used and the latest version available at decision time.
+The paired tests in `StaleContextResolverTest` create context `v1` with category `travel` and then commit `v2` with category `technology`. Both versions are eligible at the explicit decision boundary. The same history is used for a normal control decision and an injected decision pinned to `v1`.
+
+| Execution | Used version | Latest eligible version | Outcome | `freshnessViolated` |
+|---|---|---|---|---|
+| Control (`LatestEligibleContextResolver`) | v2 | v2 | technology | false |
+| Injected (`StaleContextResolver`) | v1 | v2 | travel | true |
+
+The store still reports `v2` as latest eligible after injection, and repeated executions produce identical decisions for the same inputs. The injected decision is not degraded: it uses available context, but that context is stale. `freshnessViolated` records benchmark ground truth; it does not mean that the evaluated system detected the problem. Independent invariant evaluation and an end-to-end scenario runner remain planned.
 
 ## Error model
 
