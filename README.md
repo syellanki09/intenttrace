@@ -61,7 +61,14 @@ The repository currently includes the canonical failure taxonomy, reference arch
 
 The pipeline records both the context version used by a decision and the latest version eligible at the decision boundary, and it explicitly marks fallback decisions caused by missing context as degraded.
 
-The next implementation milestones are deterministic fault injection, invariant evaluation, structured provenance output, and the benchmark harness.
+The first deterministic stale-context injector, `StaleContextResolver` in the `injectors` module, selects an older eligible context version without modifying stored history. Paired tests show the control decision using the latest eligible version and the injected decision using the pinned older version. `freshnessViolated` records benchmark ground truth, not whether the evaluated system detected the problem.
+
+The next implementation milestones are:
+
+- Independent invariant evaluation
+- Structured decision provenance
+- Machine-readable benchmark results
+- An end-to-end scenario runner
 
 No external adoption or third-party use is claimed.
 
