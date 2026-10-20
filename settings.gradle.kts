@@ -11,5 +11,6 @@ rootProject.name = "intenttrace"
 include(
     "pipeline",
     "injectors",
-    "evaluation"
+    "evaluation",
+    "provenance"
 )

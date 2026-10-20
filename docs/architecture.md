@@ -56,7 +56,14 @@ Results use the six-value `FailureClass` enum. Each value has an explicit canoni
 The result's `violated` property is derived from its status. Its separate nullable `detected` field records an observation supplied by the caller: `null` means no observation was supplied, `false` means the caller reported no detection, and `true` means the caller reported detection. Evaluation never infers a detection signal from ground truth, and permits false positives and false negatives to remain representable.
 
 ### `provenance/`
-Planned: records the information used by the decision, including identifiers, versions, timestamps, transformations, degraded/fallback states, and outcome metadata needed for diagnosis.
+
+`ProvenanceRecorder` is called by a harness after decision and evaluation. It does not add fields to `Decision`, mutate context history, or introduce a pipeline dependency on recording. It checks that evaluation matches the recorded versions and that context evidence agrees with the store at the decision boundary.
+
+`ProvenanceRecord` schema version 1 includes execution kind, decision identifiers, outcome and degradation reason, decision timestamp, expected invariant, used and latest eligible context snapshots, and evaluation evidence. Each context snapshot includes its commit timestamp and attributes. `ReproductionMetadata` holds scenario name/version, full source commit SHA, optional seed, runtime/JDK/OS, and configuration. Metadata is supplied explicitly by the caller rather than guessed from the recording environment.
+
+Event ID, event time, and ingestion time remain null for this context-only scenario because those stages are not modeled. A null seed indicates no seed applies. The recorder snapshots configuration and context maps to prevent subsequent caller mutation from rewriting the evidence.
+
+`ProvenanceJson` uses kotlinx.serialization with explicit canonical failure-class IDs, ISO-8601 timestamps, compact single-line JSON, and explicit null/default fields. Detection remains separate from invariant status. This provides the record format; file output and a standalone executable scenario remain follow-up work.
 
 ### `benchmarks/`
 Planned: defines scenario configuration, expected invariants, execution harnesses, raw result formats, and reference results.

@@ -63,6 +63,8 @@ A result record distinguishes:
 - diagnostic evidence;
 - scenario/configuration metadata.
 
+The current provenance library implements a version-1 diagnostic record through `ProvenanceRecord` and `ProvenanceJson`. A harness supplies reproduction metadata explicitly and calls the recorder after decision and evaluation while the decision-boundary history is still available. Used/latest context snapshots preserve attributes and commit times. Unmodeled event/ingestion times and absent detection observations are serialized as null; they are not inferred or fabricated. Full result bundles and the one-command scenario runner remain planned.
+
 ## Repetition and uncertainty
 
 When a scenario includes nondeterministic timing, concurrency, or sampling, the benchmark uses a documented number of repetitions and reports an appropriate uncertainty summary. Fully deterministic scenarios document whether repeated execution adds useful information.
