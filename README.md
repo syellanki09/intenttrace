@@ -49,6 +49,7 @@ docs/                  failure taxonomy, architecture notes, benchmark methodolo
 generator/             synthetic context and event workload generation
 pipeline/              clean-room reference personalization pipeline
 injectors/             one fault injector per failure class
+evaluation/            independent invariant evaluation and detection observations
 provenance/            decision provenance capture and reporting
 benchmarks/            scenario definitions, harness, and reference results
 ```
@@ -63,9 +64,10 @@ The pipeline records both the context version used by a decision and the latest 
 
 The first deterministic stale-context injector, `StaleContextResolver` in the `injectors` module, selects an older eligible context version without modifying stored history. Paired tests show the control decision using the latest eligible version and the injected decision using the pinned older version. `freshnessViolated` records benchmark ground truth, not whether the evaluated system detected the problem.
 
+The `evaluation` module independently compares recorded context versions through `FreshnessInvariant`. Results distinguish `SATISFIED`, `VIOLATED`, and `NOT_APPLICABLE` and retain expected and observed versions. Detection observations are supplied separately; `detected = null` means no observation was supplied. Missing context is not classified as a satisfied freshness invariant.
+
 The next implementation milestones are:
 
-- Independent invariant evaluation
 - Structured decision provenance
 - Machine-readable benchmark results
 - An end-to-end scenario runner

@@ -47,6 +47,12 @@ The first implemented injector, `StaleContextResolver`, implements `ContextResol
 
 Invalid injection configurations fail immediately, including missing pinned versions, versions committed after the decision boundary, and versions that are not older than the latest eligible version. Additional injectors are planned for other failure classes.
 
+### `evaluation/`
+
+`FreshnessInvariant` independently compares the decision's used and latest eligible context versions. `InvariantResult` records the canonical `stale-context` failure-class ID, expected and observed versions, an explanation, and one of `SATISFIED`, `VIOLATED`, or `NOT_APPLICABLE`. Missing either version makes freshness not applicable; it is not evidence of a fresh decision.
+
+The result's `violated` property is derived from its status. Its separate nullable `detected` field records an observation supplied by the caller: `null` means no observation was supplied, `false` means the caller reported no detection, and `true` means the caller reported detection. Evaluation never infers a detection signal from ground truth, and permits false positives and false negatives to remain representable.
+
 ### `provenance/`
 Planned: records the information used by the decision, including identifiers, versions, timestamps, transformations, degraded/fallback states, and outcome metadata needed for diagnosis.
 
@@ -82,7 +88,7 @@ The paired tests in `StaleContextResolverTest` create context `v1` with category
 | Control (`LatestEligibleContextResolver`) | v2 | v2 | technology | false |
 | Injected (`StaleContextResolver`) | v1 | v2 | travel | true |
 
-The store still reports `v2` as latest eligible after injection, and repeated executions produce identical decisions for the same inputs. The injected decision is not degraded: it uses available context, but that context is stale. `freshnessViolated` records benchmark ground truth; it does not mean that the evaluated system detected the problem. Independent invariant evaluation and an end-to-end scenario runner remain planned.
+The store still reports `v2` as latest eligible after injection, and repeated executions produce identical decisions for the same inputs. The injected decision is not degraded: it uses available context, but that context is stale. `freshnessViolated` records benchmark ground truth; it does not mean that the evaluated system detected the problem. `FreshnessInvariant` independently evaluates the control as `SATISFIED` and injection as `VIOLATED`, with no detection observation supplied by either path. An end-to-end scenario runner remains planned.
 
 ## Error model
 
