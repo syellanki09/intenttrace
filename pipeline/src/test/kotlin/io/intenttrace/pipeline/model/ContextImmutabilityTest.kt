@@ -5,9 +5,28 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotSame
+import kotlin.test.assertNotEquals
 
 class ContextImmutabilityTest {
     private val timestamp = Instant.parse("2026-01-01T00:00:01Z")
+
+    @Test
+    fun `equality compares every context field`() {
+        val original = Context("user-001", 1, timestamp, mapOf("category" to "travel"))
+        val different = listOf(
+            original.copy(id = "user-002"),
+            original.copy(version = 2),
+            original.copy(committedAt = timestamp.plusSeconds(1)),
+            original.copy(attributes = mapOf("category" to "technology"))
+        )
+        for (context in different) {
+            assertNotEquals(original, context)
+            assertNotEquals(context, original)
+        }
+        val equivalent = Context("user-001", 1, timestamp, mutableMapOf("category" to "travel"))
+        assertEquals(original, equivalent)
+        assertEquals(original.hashCode(), equivalent.hashCode())
+    }
 
     @Test
     fun `constructor snapshots input and keeps hash collection membership stable`() {

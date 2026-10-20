@@ -1,17 +1,7 @@
 plugins {
-    kotlin("jvm")
+    id("intenttrace.kotlin-conventions")
 }
 
 dependencies {
-    implementation(project(":pipeline"))
-
-    testImplementation(kotlin("test"))
-}
-
-kotlin {
-    jvmToolchain(17)
-}
-
-tasks.test {
-    useJUnitPlatform()
+    api(project(":pipeline"))
 }
