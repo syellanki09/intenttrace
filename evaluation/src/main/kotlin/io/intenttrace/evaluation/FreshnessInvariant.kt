@@ -21,7 +21,7 @@ class FreshnessInvariant {
                 "Decision used context version $observed instead of latest eligible version $expected."
         }
         return InvariantResult(
-            failureClassId = "stale-context",
+            failureClass = FailureClass.STALE_CONTEXT,
             status = status,
             expectedVersion = expected,
             observedVersion = observed,

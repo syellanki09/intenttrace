@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":pipeline"))
+    api(project(":pipeline"))
     testImplementation(project(":injectors"))
 }

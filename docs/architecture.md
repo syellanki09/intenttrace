@@ -49,6 +49,8 @@ Invalid injection configurations fail immediately, including missing pinned vers
 
 ### `evaluation/`
 
+Results use the six-value `FailureClass` enum. Each value has an explicit canonical `id` for grouping and future serialization; `InvariantResult.failureClassId` derives that ID from the typed value.
+
 `FreshnessInvariant` independently compares the decision's used and latest eligible context versions. `InvariantResult` records the canonical `stale-context` failure-class ID, expected and observed versions, an explanation, and one of `SATISFIED`, `VIOLATED`, or `NOT_APPLICABLE`. Missing either version makes freshness not applicable; it is not evidence of a fresh decision.
 
 The result's `violated` property is derived from its status. Its separate nullable `detected` field records an observation supplied by the caller: `null` means no observation was supplied, `false` means the caller reported no detection, and `true` means the caller reported detection. Evaluation never infers a detection signal from ground truth, and permits false positives and false negatives to remain representable.

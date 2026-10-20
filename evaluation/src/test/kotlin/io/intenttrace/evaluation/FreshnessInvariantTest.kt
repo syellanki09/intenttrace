@@ -33,6 +33,7 @@ class FreshnessInvariantTest {
         assertNull(controlResult.detected)
 
         val injectedResult = evaluator.evaluate(injected)
+        assertEquals(FailureClass.STALE_CONTEXT, injectedResult.failureClass)
         assertEquals("stale-context", injectedResult.failureClassId)
         assertEquals(InvariantStatus.VIOLATED, injectedResult.status)
         assertTrue(injectedResult.violated)
