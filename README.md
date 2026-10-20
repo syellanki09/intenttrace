@@ -50,7 +50,7 @@ generator/             synthetic context and event workload generation
 pipeline/              clean-room reference personalization pipeline
 injectors/             one fault injector per failure class
 evaluation/            independent invariant evaluation and detection observations
-provenance/            decision provenance capture and reporting
+provenance/            structured decision evidence and JSON serialization
 benchmarks/            scenario definitions, harness, and reference results
 ```
 
@@ -68,11 +68,12 @@ The `evaluation` module independently compares recorded context versions through
 
 The next implementation milestones are:
 
-- Structured decision provenance
 - Machine-readable benchmark results
 - An end-to-end scenario runner
 
 No external adoption or third-party use is claimed.
+
+The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. This is a library API; a standalone scenario runner and result-file command remain planned.
 
 ## Related work
 
