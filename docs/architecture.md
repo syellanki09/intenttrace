@@ -63,10 +63,10 @@ The result's `violated` property is derived from its status. Its separate nullab
 
 Event ID, event time, and ingestion time remain null for this context-only scenario because those stages are not modeled. A null seed indicates no seed applies. The recorder snapshots configuration and context maps to prevent subsequent caller mutation from rewriting the evidence.
 
-`ProvenanceJson` uses kotlinx.serialization with explicit canonical failure-class IDs, ISO-8601 timestamps, compact single-line JSON, and explicit null/default fields. Detection remains separate from invariant status. This provides the record format; file output and a standalone executable scenario remain follow-up work.
+`ProvenanceJson` uses kotlinx.serialization with explicit canonical failure-class IDs, ISO-8601 timestamps, compact single-line JSON, and explicit null/default fields. Detection remains separate from invariant status. The benchmark runner writes these records as JSONL.
 
 ### `benchmarks/`
-Planned: defines scenario configuration, expected invariants, execution harnesses, raw result formats, and reference results.
+`StaleContextScenario` runs fixed control and injected paths and returns provenance records. The application entry point captures runtime and source metadata, writes two JSONL records, and prints evaluation summaries. Run `./gradlew :benchmarks:run --no-daemon` from the checkout; see the README for output paths and arguments. Tagged reference bundles remain planned.
 
 ## Scenario contract
 
@@ -97,7 +97,7 @@ The paired tests in `StaleContextResolverTest` create context `v1` with category
 | Control (`LatestEligibleContextResolver`) | v2 | v2 | technology | false |
 | Injected (`StaleContextResolver`) | v1 | v2 | travel | true |
 
-The store still reports `v2` as latest eligible after injection, and repeated executions produce identical decisions for the same inputs. The injected decision is not degraded: it uses available context, but that context is stale. `freshnessViolated` records benchmark ground truth; it does not mean that the evaluated system detected the problem. `FreshnessInvariant` independently evaluates the control as `SATISFIED` and injection as `VIOLATED`, with no detection observation supplied by either path. An end-to-end scenario runner remains planned.
+The store still reports `v2` as latest eligible after injection, and repeated executions produce identical decisions for the same inputs. The injected decision is not degraded: it uses available context, but that context is stale. `freshnessViolated` records benchmark ground truth; it does not mean that the evaluated system detected the problem. `FreshnessInvariant` independently evaluates the control as `SATISFIED` and injection as `VIOLATED`, with no detection observation supplied by either path. The benchmark application executes this pair and writes both records.
 
 ## Error model
 

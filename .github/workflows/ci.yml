@@ -27,3 +27,6 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test --no-daemon
+
+      - name: Run stale-context scenario
+        run: ./gradlew :benchmarks:run --no-daemon
