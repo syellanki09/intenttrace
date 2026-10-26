@@ -12,5 +12,6 @@ include(
     "pipeline",
     "injectors",
     "evaluation",
-    "provenance"
+    "provenance",
+    "benchmarks"
 )

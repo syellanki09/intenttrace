@@ -40,7 +40,26 @@ A second area of focus is the reliability of **software development kits and oth
 - **Open technologies.** No dependency on any commercial personalization platform.
 - **Reproducible by others.** Every benchmark scenario is intended to be runnable end to end by an independent reader from a clean checkout.
 
-## Repository layout
+## Quick Start
+
+From a Git checkout with JDK 17 and network access for Gradle dependencies, run:
+
+```bash
+./gradlew :benchmarks:run --no-daemon
+```
+
+The command runs control and injected decisions against the same synthetic history, prints their evaluation statuses, and writes two JSON records to `benchmarks/build/results/stale-context/results.jsonl` (one record per line). Control uses v2 (`technology`, `SATISFIED`); injection uses v1 (`travel`, `VIOLATED`). Both retain `detected: null`: benchmark ground truth is not system detection.
+
+Each record includes context evidence and scenario/runtime metadata. The command reads the full Git commit ID and records whether the working tree is dirty. Repeated executions on the same checkout and runtime produce identical output and replace the existing result file. Runtime and source metadata may differ across environments; the synthetic outcomes remain the same.
+
+```bash
+./gradlew :benchmarks:run --args="--output /tmp/intenttrace-results.jsonl"
+./gradlew clean test --no-daemon
+```
+
+For source archives without Git metadata, supply `--source-commit` with the full source commit ID; this is recorded as caller-supplied rather than verified. This is a synthetic demonstration, not a tagged reference release.
+
+## Repository Layout
 
 Current and planned structure:
 
@@ -51,7 +70,7 @@ pipeline/              clean-room reference personalization pipeline
 injectors/             one fault injector per failure class
 evaluation/            independent invariant evaluation and detection observations
 provenance/            structured decision evidence and JSON serialization
-benchmarks/            scenario definitions, harness, and reference results
+benchmarks/            executable stale-context scenario and JSONL output
 ```
 
 ## Status
@@ -68,12 +87,12 @@ The `evaluation` module independently compares recorded context versions through
 
 The next implementation milestones are:
 
-- Machine-readable benchmark results
-- An end-to-end scenario runner
+- Release hardening and a tagged reference result bundle
+- Independent reproduction instructions
 
 No external adoption or third-party use is claimed.
 
-The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. This is a library API; a standalone scenario runner and result-file command remain planned.
+The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. The `benchmarks` application runs the paired stale-context scenario and writes these records as JSONL.
 
 ## Related work
 

@@ -63,7 +63,7 @@ A result record distinguishes:
 - diagnostic evidence;
 - scenario/configuration metadata.
 
-The current provenance library implements a version-1 diagnostic record through `ProvenanceRecord` and `ProvenanceJson`. A harness supplies reproduction metadata explicitly and calls the recorder after decision and evaluation while the decision-boundary history is still available. Used/latest context snapshots preserve attributes and commit times. Unmodeled event/ingestion times and absent detection observations are serialized as null; they are not inferred or fabricated. Full result bundles and the one-command scenario runner remain planned.
+The current provenance library implements a version-1 diagnostic record through `ProvenanceRecord` and `ProvenanceJson`. A harness supplies reproduction metadata explicitly and calls the recorder after decision and evaluation while the decision-boundary history is still available. Used/latest context snapshots preserve attributes and commit times. Unmodeled event/ingestion times and absent detection observations are serialized as null; they are not inferred or fabricated. Run `./gradlew :benchmarks:run --no-daemon` to generate paired records in `benchmarks/build/results/stale-context/results.jsonl`. Runtime metadata reflects the executing environment; source metadata records Git HEAD and working-tree dirtiness, or an explicitly caller-supplied source commit. Tagged reference bundles remain planned.
 
 ## Repetition and uncertainty
 
