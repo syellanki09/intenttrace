@@ -61,6 +61,8 @@ For source archives without Git metadata, supply `--source-commit` with the full
 
 ## Repository Layout
 
+See the [reproduction guide](docs/reproduction.md) for clean-checkout verification, expected evidence, and limitations.
+
 Current and planned structure:
 
 ```

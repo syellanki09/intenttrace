@@ -30,3 +30,8 @@ jobs:
 
       - name: Run stale-context scenario
         run: ./gradlew :benchmarks:run --no-daemon
+
+      - name: Verify scenario evidence
+        run: |
+          python3 -m unittest discover -s tools -p 'test_*.py'
+          python3 tools/verify_results.py benchmarks/build/results/stale-context/results.jsonl
