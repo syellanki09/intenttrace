@@ -42,6 +42,21 @@ For a source archive without Git, pass the known full source commit explicitly:
 
 Replace the placeholder with the actual commit. Caller-supplied source identity is marked as such and is not verified by the runner. Event/ingestion timestamps and detection observations remain null because these are not modeled by this scenario.
 
+## Result Bundles
+
+From a clean checkout, generate and verify results, then package the raw evidence:
+
+```bash
+./gradlew :benchmarks:run --no-daemon
+python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
+```
+
+The ZIP contains unchanged `results.jsonl`, a `manifest.json` with source/runtime metadata and the raw file's SHA-256 and byte count, and reproduction commands in `README.txt`. Packaging rejects dirty or caller-supplied source metadata and invalid scenario evidence. For identical input bytes, the archive is deterministic. This checks the recorded clean-source marker; it does not authenticate the producer or prove the metadata was not edited.
+
+CI uploads the bundle under `stale-context-<commit>` after tests and independent verification pass. Download it from the workflow run's artifacts section; retention is 30 days. For pull-request runs, the commit may be GitHub's tested merge commit. Preserve that identity when reproducing, rather than substituting a branch head. These are CI evidence bundles, not tagged reference releases or permanent archival deposits.
+
+To check the raw file after extraction, recompute its SHA-256 and compare it with `manifest.json`, then run `tools/verify_results.py` against the extracted JSONL. Checksums detect accidental changes but do not provide signatures or authenticity guarantees.
+
 ## Troubleshooting
 
 Dependency download failures mean the scenario has not run: check network access to the hosts listed above. A failing verifier exits nonzero; preserve the output and report the commit, runtime, command, and error rather than editing the JSONL. Passing demonstrates this controlled stale-context failure, not its prevalence in production systems.

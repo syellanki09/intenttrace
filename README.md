@@ -63,6 +63,8 @@ For source archives without Git metadata, supply `--source-commit` with the full
 
 See the [reproduction guide](docs/reproduction.md) for clean-checkout verification, expected evidence, and limitations.
 
+Successful CI runs retain a downloadable reproduction bundle with raw JSONL, a checksum manifest, and reproduction commands for 30 days. See the guide for local packaging and source-identity limitations.
+
 Current and planned structure:
 
 ```

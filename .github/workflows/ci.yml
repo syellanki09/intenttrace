@@ -35,3 +35,14 @@ jobs:
         run: |
           python3 -m unittest discover -s tools -p 'test_*.py'
           python3 tools/verify_results.py benchmarks/build/results/stale-context/results.jsonl
+
+      - name: Package reproduction evidence
+        run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
+
+      - name: Retain reproduction evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: stale-context-${{ github.sha }}
+          path: benchmarks/build/results/stale-context-bundle.zip
+          if-no-files-found: error
+          retention-days: 30
