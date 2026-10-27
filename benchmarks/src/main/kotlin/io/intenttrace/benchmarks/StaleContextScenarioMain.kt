@@ -8,6 +8,16 @@ import java.nio.file.StandardCopyOption
 
 fun main(args: Array<String>) {
     val options = RunnerOptions.parse(args)
+    val configuration = options.configuration?.let { StaleContextConfiguration.decode(Files.readString(it)) }
+        ?: StaleContextConfiguration()
+    require(options.configuration?.toAbsolutePath()?.normalize() != options.output.toAbsolutePath().normalize()) {
+        "Output must not overwrite the configuration file"
+    }
+    options.configuration?.let {
+        require(!Files.exists(options.output) || !Files.isSameFile(it, options.output)) {
+            "Output must not overwrite the configuration file"
+        }
+    }
     val commit = options.sourceCommit ?: git("rev-parse", "HEAD")
     val metadata = ReproductionMetadata(
         scenarioName = "stale-context",
@@ -23,7 +33,7 @@ fun main(args: Array<String>) {
             mapOf("sourceCommitOrigin" to "caller-supplied")
         }
     )
-    val records = StaleContextScenario().run(metadata)
+    val records = StaleContextScenario().run(metadata, configuration)
     val output = options.output.toAbsolutePath().normalize()
     Files.createDirectories(output.parent)
     val temporary = Files.createTempFile(output.parent, "stale-context-", ".jsonl.tmp")
@@ -40,19 +50,20 @@ fun main(args: Array<String>) {
     println("Wrote ${records.size} records to $output")
 }
 
-internal data class RunnerOptions(val output: Path, val sourceCommit: String?) {
+internal data class RunnerOptions(val output: Path, val sourceCommit: String?, val configuration: Path?) {
     companion object {
         fun parse(args: Array<String>): RunnerOptions {
-            require(args.size % 2 == 0) { "Expected --output PATH and/or --source-commit SHA" }
+            require(args.size % 2 == 0) { "Expected --output PATH, --source-commit SHA, and/or --config PATH" }
             val options = mutableMapOf<String, String>()
             args.toList().chunked(2).forEach { (key, value) ->
-                require(key in setOf("--output", "--source-commit")) { "Unknown option: $key" }
+                require(key in setOf("--output", "--source-commit", "--config")) { "Unknown option: $key" }
                 require(value.isNotBlank() && !value.startsWith("--")) { "Missing value for $key" }
                 require(options.put(key, value) == null) { "Duplicate option: $key" }
             }
             return RunnerOptions(
                 Path.of(options["--output"] ?: "benchmarks/build/results/stale-context/results.jsonl"),
-                options["--source-commit"]
+                options["--source-commit"],
+                options["--config"]?.let(Path::of)
             )
         }
     }

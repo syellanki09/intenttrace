@@ -1,0 +1,11 @@
+{
+  "configurationVersion": 1,
+  "contextId": "user-001",
+  "olderVersion": 1,
+  "latestVersion": 2,
+  "olderCommittedAt": "2026-01-01T00:00:01Z",
+  "latestCommittedAt": "2026-01-01T00:00:02Z",
+  "decidedAt": "2026-01-01T00:00:03Z",
+  "olderCategory": "travel",
+  "latestCategory": "technology"
+}

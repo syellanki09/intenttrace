@@ -68,6 +68,31 @@ class BundleResultsTest(unittest.TestCase):
             bundle(self.source, self.source)
         self.assertEqual(original, self.source.read_bytes())
 
+    def test_versioned_configuration_is_exported_for_replay(self):
+        configuration = self.records[0]["reproduction"]["configuration"]
+        configuration.update({
+            "configurationVersion": "1", "contextId": "user-001", "olderVersion": "1",
+            "latestVersion": "2", "pinnedVersion": "1", "olderCategory": "travel",
+            "latestCategory": "technology", "olderCommittedAt": "2026-01-01T00:00:01Z",
+            "latestCommittedAt": "2026-01-01T00:00:02Z", "decidedAt": "2026-01-01T00:00:03Z",
+        })
+        for record in self.records:
+            record["reproduction"]["configuration"] = dict(configuration)
+            record["latestEligibleContext"].update({"committedAt": configuration["latestCommittedAt"],
+                "attributes": {"preferredCategory": "technology"}})
+            record["usedContext"]["committedAt"] = configuration[
+                "latestCommittedAt" if record["execution"] == "CONTROL" else "olderCommittedAt"]
+        self.write()
+        manifest = bundle(self.source, self.output)
+        with zipfile.ZipFile(self.output) as archive:
+            raw = archive.read("scenario-config.json")
+            replay = json.loads(raw)
+            self.assertEqual(1, replay["configurationVersion"])
+            self.assertEqual(2, replay["latestVersion"])
+            self.assertNotIn("sourceDirty", replay)
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), manifest["files"]["scenario-config.json"]["sha256"])
+            self.assertIn("--config", archive.read("README.txt").decode())
+
 
 if __name__ == "__main__":
     unittest.main()
