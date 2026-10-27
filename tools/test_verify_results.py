@@ -55,6 +55,30 @@ class VerifyResultsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.check(records)
 
+    def test_custom_configuration_and_evidence_are_verified(self):
+        configuration = {
+            "configurationVersion": "1", "contextId": "custom-user",
+            "olderVersion": "4", "latestVersion": "9", "pinnedVersion": "4",
+            "olderCategory": "science", "latestCategory": "music",
+            "olderCommittedAt": "2026-01-01T00:00:01Z",
+            "latestCommittedAt": "2026-01-01T00:00:02Z",
+            "decidedAt": "2026-01-01T00:00:03Z",
+        }
+        for record, version, category in zip(self.records, [9, 4], ["music", "science"]):
+            record["reproduction"]["configuration"] = configuration
+            record["contextId"] = "custom-user"
+            record["outcome"] = category
+            record["usedContext"].update({"id": "custom-user", "version": version,
+                "attributes": {"preferredCategory": category},
+                "committedAt": configuration["latestCommittedAt" if version == 9 else "olderCommittedAt"]})
+            record["latestEligibleContext"].update({"id": "custom-user", "version": 9,
+                "attributes": {"preferredCategory": "music"}, "committedAt": configuration["latestCommittedAt"]})
+            record["evaluation"].update({"observedVersion": version, "expectedVersion": 9})
+        self.assertEqual(self.records, self.check(self.records))
+        self.records[1]["usedContext"]["committedAt"] = "2026-01-01T00:00:04Z"
+        with self.assertRaises(ValueError):
+            self.check(self.records)
+
 
 if __name__ == "__main__":
     unittest.main()

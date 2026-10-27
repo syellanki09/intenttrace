@@ -1,5 +1,6 @@
 plugins {
     id("intenttrace.kotlin-conventions")
+    alias(libs.plugins.kotlin.serialization)
     application
 }
 

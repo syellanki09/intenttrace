@@ -25,6 +25,15 @@ def bundle(results, destination):
         if not isinstance(metadata[field], str) or not metadata[field].strip():
             raise ValueError(f"Missing reproduction metadata: {field}")
     raw = results.read_bytes()
+    configuration = metadata["configuration"]
+    replay = None
+    if "configurationVersion" in configuration:
+        fields = ("configurationVersion", "contextId", "olderVersion", "latestVersion",
+                  "olderCommittedAt", "latestCommittedAt", "decidedAt", "olderCategory", "latestCategory")
+        replay = {key: configuration[key] for key in fields}
+        for key in ("configurationVersion", "olderVersion", "latestVersion"):
+            replay[key] = int(replay[key])
+    replay_bytes = (json.dumps(replay, indent=2, sort_keys=True) + "\n").encode() if replay else None
     manifest = {
         "bundleVersion": 1,
         "scenarioName": metadata["scenarioName"],
@@ -33,12 +42,19 @@ def bundle(results, destination):
         "reproduction": metadata,
         "files": {"results.jsonl": {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}},
     }
+    if replay_bytes is not None:
+        manifest["files"]["scenario-config.json"] = {
+            "sha256": hashlib.sha256(replay_bytes).hexdigest(), "bytes": len(replay_bytes)
+        }
+    command = "./gradlew :benchmarks:run --no-daemon"
+    if replay is not None:
+        command += ' --args="--config /absolute/path/to/extracted/scenario-config.json"'
     instructions = (
         "IntentTrace synthetic stale-context reproduction bundle\n"
         f"Source commit: {commit}\n"
         "Clone https://github.com/syellanki09/intenttrace.git and check out that commit.\n"
         "With JDK 17 and Python 3.9+, run from the checkout:\n"
-        "./gradlew :benchmarks:run --no-daemon\n"
+        f"{command}\n"
         "python3 tools/verify_results.py benchmarks/build/results/stale-context/results.jsonl\n"
         "The two records show CONTROL=SATISFIED and INJECTED=VIOLATED.\n"
         "Detection is unknown, not successful detection. Runtime metadata may differ.\n"
@@ -46,12 +62,15 @@ def bundle(results, destination):
         "This is CI reproduction evidence, not a tagged reference release.\n"
     )
     destination.parent.mkdir(parents=True, exist_ok=True)
+    files = [
+        ("results.jsonl", raw),
+        ("manifest.json", (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()),
+        ("README.txt", instructions.encode()),
+    ]
+    if replay_bytes is not None:
+        files.append(("scenario-config.json", replay_bytes))
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for name, content in [
-            ("results.jsonl", raw),
-            ("manifest.json", (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()),
-            ("README.txt", instructions.encode()),
-        ]:
+        for name, content in files:
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16

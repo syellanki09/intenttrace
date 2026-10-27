@@ -54,6 +54,7 @@ Each record includes context evidence and scenario/runtime metadata. The command
 
 ```bash
 ./gradlew :benchmarks:run --args="--output /tmp/intenttrace-results.jsonl"
+./gradlew :benchmarks:run --args="--config benchmarks/config/stale-context.json"
 ./gradlew clean test --no-daemon
 ```
 
