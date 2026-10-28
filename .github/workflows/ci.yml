@@ -39,6 +39,9 @@ jobs:
       - name: Package reproduction evidence
         run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
 
+      - name: Verify packaged evidence
+        run: python3 tools/verify_bundle.py benchmarks/build/results/stale-context-bundle.zip
+
       - name: Retain reproduction evidence
         uses: actions/upload-artifact@v4
         with:

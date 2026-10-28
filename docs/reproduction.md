@@ -69,7 +69,15 @@ Versioned-config results also include a checksummed `scenario-config.json` conta
 
 CI uploads the bundle under `stale-context-<commit>` after tests and independent verification pass. Download it from the workflow run's artifacts section; retention is 30 days. For pull-request runs, the commit may be GitHub's tested merge commit. Preserve that identity when reproducing, rather than substituting a branch head. These are CI evidence bundles, not tagged reference releases or permanent archival deposits.
 
-To check the raw file after extraction, recompute its SHA-256 and compare it with `manifest.json`, then run `tools/verify_results.py` against the extracted JSONL. Checksums detect accidental changes but do not provide signatures or authenticity guarantees.
+Verify a downloaded ZIP before extraction using Python alone:
+
+```bash
+python3 tools/verify_bundle.py /path/to/stale-context-bundle.zip
+```
+
+The verifier reads members without extracting them, rejects duplicate or unexpected file names, checks evidence sizes and SHA-256 hashes, validates the paired scenario results, and checks manifest/source metadata and replay configuration against the raw evidence. It exits nonzero for inconsistent bundles. CI runs this check before uploading artifacts. README text is informational and is not covered by the evidence checksums.
+
+Checksums detect changes but do not provide signatures or authenticity guarantees: a consistently rewritten bundle can still pass. Obtain the expected source revision and artifact from a trusted workflow run. The tool is for these small version-1 scenario bundles, not a general-purpose ZIP scanner. To inspect extracted raw results separately, run `tools/verify_results.py` against the JSONL.
 
 ## Troubleshooting
 
