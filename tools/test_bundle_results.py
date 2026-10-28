@@ -68,7 +68,7 @@ class BundleResultsTest(unittest.TestCase):
             bundle(self.source, self.source)
         self.assertEqual(original, self.source.read_bytes())
 
-    def test_versioned_configuration_is_exported_for_replay(self):
+    def configure_versioned(self):
         configuration = self.records[0]["reproduction"]["configuration"]
         configuration.update({
             "configurationVersion": "1", "contextId": "user-001", "olderVersion": "1",
@@ -82,6 +82,9 @@ class BundleResultsTest(unittest.TestCase):
                 "attributes": {"preferredCategory": "technology"}})
             record["usedContext"]["committedAt"] = configuration[
                 "latestCommittedAt" if record["execution"] == "CONTROL" else "olderCommittedAt"]
+
+    def test_versioned_configuration_is_exported_for_replay(self):
+        self.configure_versioned()
         self.write()
         manifest = bundle(self.source, self.output)
         with zipfile.ZipFile(self.output) as archive:

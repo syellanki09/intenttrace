@@ -66,6 +66,8 @@ See the [reproduction guide](docs/reproduction.md) for clean-checkout verificati
 
 Successful CI runs retain a downloadable reproduction bundle with raw JSONL, a checksum manifest, and reproduction commands for 30 days. See the guide for local packaging and source-identity limitations.
 
+Check a downloaded artifact without extracting it with `python3 tools/verify_bundle.py /path/to/stale-context-bundle.zip`.
+
 Current and planned structure:
 
 ```
