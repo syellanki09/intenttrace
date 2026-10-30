@@ -101,6 +101,10 @@ No external adoption or third-party use is claimed.
 
 The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. The `benchmarks` application runs the paired stale-context scenario and writes these records as JSONL.
 
+## Release Preparation
+
+Release preparation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Neither document announces a release or archival identifier.
+
 ## Related work
 
 The clean-room reproduction artifact accompanying the AISQ 2026 paper *"Operational Reliability Patterns in AI Personalization Serving Infrastructure: Practitioner-Grounded Hypotheses and a Clean-Room Reproduction Study"* is maintained separately at
