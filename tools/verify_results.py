@@ -1,8 +1,27 @@
 """Check the version-1 stale-context demonstration output using only Python's stdlib."""
 
 import argparse
+import calendar
 import json
+import re
 from pathlib import Path
+
+
+def instant_order(value):
+    """Compare Java Instant UTC output without losing nanoseconds or extended years."""
+    if not isinstance(value, str):
+        raise ValueError("Timestamp must be an ISO-8601 UTC string")
+    match = re.fullmatch(r"([+-]?\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z", value)
+    if match is None:
+        raise ValueError(f"Invalid UTC timestamp: {value}")
+    year, month, day, hour, minute, second = map(int, match.groups()[:6])
+    if not (-1000000000 <= year <= 1000000000 and 1 <= month <= 12):
+        raise ValueError(f"Invalid timestamp year or month: {value}")
+    if not (1 <= day <= calendar.monthrange(year, month)[1] and
+            0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
+        raise ValueError(f"Invalid timestamp date or time: {value}")
+    nanos = int((match.group(7) or "").ljust(9, "0"))
+    return year, month, day, hour, minute, second, nanos
 
 
 def verify(path):
@@ -22,6 +41,11 @@ def verify(path):
             raise ValueError("Configured categories must be nonblank and distinct")
         if configuration["pinnedVersion"] != str(older):
             raise ValueError("Pinned version disagrees with configured older version")
+        older_time, latest_time, decision_time = (
+            instant_order(configuration[key]) for key in ("olderCommittedAt", "latestCommittedAt", "decidedAt")
+        )
+        if not older_time <= latest_time <= decision_time:
+            raise ValueError("Configured commit times must be ordered and eligible at the decision boundary")
     else:
         older, latest_version, context_id = 1, 2, "user-001"
         older_category, latest_category = "travel", "technology"
