@@ -2,13 +2,12 @@
 
 import argparse
 import hashlib
-import json
 import re
 import tempfile
 import zipfile
 from pathlib import Path
 
-from verify_results import verify
+from verify_results import exact_integer, load_json, verify
 
 
 def verify_bundle(path):
@@ -17,8 +16,8 @@ def verify_bundle(path):
         required = {"manifest.json", "results.jsonl", "README.txt"}
         if len(names) != len(set(names)) or set(names) not in (required, required | {"scenario-config.json"}):
             raise ValueError("Bundle must contain unique, expected file names only")
-        manifest = json.loads(archive.read("manifest.json"))
-        if manifest["bundleVersion"] != 1:
+        manifest = load_json(archive.read("manifest.json"))
+        if not exact_integer(manifest["bundleVersion"], 1):
             raise ValueError("Unsupported bundle version")
         checked = {"results.jsonl"} | ({"scenario-config.json"} if "scenario-config.json" in names else set())
         if set(manifest["files"]) != checked:
@@ -27,7 +26,7 @@ def verify_bundle(path):
         for name in checked:
             evidence[name] = archive.read(name)
             entry = manifest["files"][name]
-            if len(evidence[name]) != entry["bytes"] or hashlib.sha256(evidence[name]).hexdigest() != entry["sha256"]:
+            if not exact_integer(entry["bytes"], len(evidence[name])) or hashlib.sha256(evidence[name]).hexdigest() != entry["sha256"]:
                 raise ValueError(f"Checksum or size mismatch: {name}")
     with tempfile.TemporaryDirectory(prefix="intenttrace-verify-") as directory:
         results = Path(directory) / "results.jsonl"
@@ -50,12 +49,14 @@ def verify_bundle(path):
     if "configurationVersion" in configuration:
         if "scenario-config.json" not in evidence:
             raise ValueError("Versioned scenario requires replay configuration")
-        replay = json.loads(evidence["scenario-config.json"])
+        replay = load_json(evidence["scenario-config.json"])
         fields = ("configurationVersion", "contextId", "olderVersion", "latestVersion",
                   "olderCommittedAt", "latestCommittedAt", "decidedAt", "olderCategory", "latestCategory")
         expected = {key: configuration[key] for key in fields}
         for key in ("configurationVersion", "olderVersion", "latestVersion"):
             expected[key] = int(expected[key])
+            if not exact_integer(replay[key], expected[key]):
+                raise ValueError(f"Replay configuration must use an integer: {key}")
         if replay != expected:
             raise ValueError("Replay configuration disagrees with recorded inputs")
     elif "scenario-config.json" in evidence:
