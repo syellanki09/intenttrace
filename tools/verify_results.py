@@ -7,6 +7,26 @@ import re
 from pathlib import Path
 
 
+def load_json(value):
+    """Reject ambiguous keys and non-JSON numeric constants instead of normalizing them."""
+    def unique_object(pairs):
+        result = {}
+        for key, item in pairs:
+            if key in result:
+                raise ValueError(f"Duplicate JSON key: {key}")
+            result[key] = item
+        return result
+
+    def invalid_constant(constant):
+        raise ValueError(f"Invalid JSON numeric constant: {constant}")
+
+    return json.loads(value, object_pairs_hook=unique_object, parse_constant=invalid_constant)
+
+
+def exact_integer(value, expected):
+    return type(value) is int and value == expected
+
+
 def instant_order(value):
     """Compare Java Instant UTC output without losing nanoseconds or extended years."""
     if not isinstance(value, str):
@@ -25,7 +45,7 @@ def instant_order(value):
 
 
 def verify(path):
-    records = [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines()]
+    records = [load_json(line) for line in Path(path).read_text(encoding="utf-8").splitlines()]
     if len(records) != 2:
         raise ValueError("Expected exactly two JSONL records")
     configuration = records[0]["reproduction"].get("configuration", {})
@@ -56,15 +76,16 @@ def verify(path):
         used = record["usedContext"]
         latest = record["latestEligibleContext"]
         checks = {
-            "schema version": record["schemaVersion"] == 1,
+            "schema version": exact_integer(record["schemaVersion"], 1),
             "execution": record["execution"] == execution,
-            "used version": used["version"] == version,
-            "latest version": latest["version"] == latest_version,
+            "used version": exact_integer(used["version"], version),
+            "latest version": exact_integer(latest["version"], latest_version),
             "context identities": used["id"] == latest["id"] == record["contextId"] == context_id,
             "outcome": record["outcome"] == outcome == used["attributes"]["preferredCategory"],
             "failure class": evaluation["failureClassId"] == "stale-context",
             "invariant status": evaluation["status"] == status,
-            "evaluation versions": evaluation["observedVersion"] == version and evaluation["expectedVersion"] == latest_version,
+            "evaluation versions": exact_integer(evaluation["observedVersion"], version)
+                and exact_integer(evaluation["expectedVersion"], latest_version),
             "unknown detection": evaluation["detected"] is None,
             "no degradation": record["degradationReason"] is None,
             "scenario": record["reproduction"]["scenarioName"] == "stale-context"

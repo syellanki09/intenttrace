@@ -77,6 +77,8 @@ python3 tools/verify_bundle.py /path/to/stale-context-bundle.zip
 
 The verifier reads members without extracting them, rejects duplicate or unexpected file names, checks evidence sizes and SHA-256 hashes, validates the paired scenario results, and checks manifest/source metadata and replay configuration against the raw evidence. It exits nonzero for inconsistent bundles. CI runs this check before uploading artifacts. README text is informational and is not covered by the evidence checksums.
 
+Both JSONL and bundle verification reject duplicate JSON object keys and nonstandard numeric constants (`NaN`/`Infinity`). Schema/context versions and evidence byte counts must be JSON integers: booleans and floating-point values are not accepted as equivalent integers. This avoids Python coercions and last-key-wins parsing hiding malformed evidence.
+
 Checksums detect changes but do not provide signatures or authenticity guarantees: a consistently rewritten bundle can still pass. Obtain the expected source revision and artifact from a trusted workflow run. The tool is for these small version-1 scenario bundles, not a general-purpose ZIP scanner. To inspect extracted raw results separately, run `tools/verify_results.py` against the JSONL.
 
 ## Troubleshooting
