@@ -28,7 +28,7 @@ The runner prints a summary and replaces `benchmarks/build/results/stale-context
 | CONTROL | v2 | v2 | technology | SATISFIED | null |
 | INJECTED | v1 | v2 | travel | VIOLATED | null |
 
-The verifier reads JSONL independently of the Kotlin serializer and checks this scenario's outcomes, context/version evidence, paired metadata, and absent detection/degradation signals. It is a check for this demonstration, not a general provenance-schema validator or proof that all benchmark metadata is authentic.
+The verifier reads JSONL independently of the Kotlin serializer and checks this scenario's outcomes, context/version evidence, paired metadata, and absent detection/degradation signals. For versioned configuration it also validates UTC timestamps and requires older commit <= latest commit <= decision boundary, retaining nanosecond precision. Agreement between metadata and evidence alone cannot make future or reversed history valid. It is a check for this demonstration, not a general provenance-schema validator or proof that all benchmark metadata is authentic.
 
 ## Scenario Configuration
 
