@@ -66,4 +66,8 @@ data class ProvenanceRecord(
     val eventId: String? = null,
     val eventAt: Instant? = null,
     val ingestedAt: Instant? = null
-)
+) {
+    init {
+        require(schemaVersion == 1) { "Unsupported provenance schema version: $schemaVersion" }
+    }
+}
