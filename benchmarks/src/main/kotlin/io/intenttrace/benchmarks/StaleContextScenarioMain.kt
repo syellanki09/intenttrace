@@ -7,6 +7,23 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 fun main(args: Array<String>) {
+    if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
+        println("""
+            IntentTrace stale-context scenario
+            Usage: --config PATH --output PATH --source-commit SHA
+            All options are optional and accept a separate value.
+
+            --config PATH        Read version-1 JSON scenario inputs; otherwise use defaults.
+            --output PATH        Replace the JSONL result file at PATH.
+                                 Default: benchmarks/build/results/stale-context/results.jsonl
+            --source-commit SHA  Use a full caller-supplied source commit ID instead of Git metadata.
+            --help, -h           Show help without running the scenario or writing files.
+
+            Gradle example: ./gradlew :benchmarks:run --args="--config benchmarks/config/stale-context.json"
+            Output: control SATISFIED, injection VIOLATED; detection observations remain null.
+        """.trimIndent())
+        return
+    }
     val options = RunnerOptions.parse(args)
     val configuration = options.configuration?.let { StaleContextConfiguration.decode(Files.readString(it)) }
         ?: StaleContextConfiguration()
