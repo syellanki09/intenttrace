@@ -27,6 +27,19 @@ class ProvenanceRecorderTest {
     )
 
     @Test
+    fun `unsupported schema versions are rejected during copying and decoding`() {
+        val store = history()
+        val decision = ReferencePipeline(store).decide("fresh", "user-001", boundary)
+        val record = recorder.record(decision, FreshnessInvariant().evaluate(decision), store, metadata, ExecutionKind.CONTROL)
+        for (version in listOf(0, -1, 2)) {
+            assertFailsWith<IllegalArgumentException> { record.copy(schemaVersion = version) }
+            val json = ProvenanceJson.encode(record).replace("\"schemaVersion\":1", "\"schemaVersion\":$version")
+            assertFailsWith<IllegalArgumentException> { ProvenanceJson.decode(json) }
+        }
+        assertEquals(record, ProvenanceJson.decode(ProvenanceJson.encode(record)))
+    }
+
+    @Test
     fun `paired provenance preserves evidence and round trips as compact JSON`() {
         val store = history()
         val pipelines = listOf(
