@@ -102,6 +102,10 @@ No external adoption or third-party use is claimed.
 
 The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. The `benchmarks` application runs the paired stale-context scenario and writes these records as JSONL.
 
+## Contract Evaluation
+
+The first [cross-client contract evaluator](docs/contract-compatibility.md) compares recorded outcomes for the same logical input, with versioned synthetic fixtures. The standalone benchmark remains the stale-context scenario.
+
 ## Release Preparation
 
 Release preparation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Neither document announces a release or archival identifier.
