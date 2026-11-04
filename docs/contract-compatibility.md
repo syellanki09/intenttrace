@@ -22,4 +22,18 @@ These are recorded synthetic client outcomes, not implementations of a producer,
 ./gradlew :evaluation:test --no-daemon
 ```
 
-This is a library evaluator, not a second executable benchmark. Producer/consumer adapters, contract-specific provenance, a runner, and independent contract-result verification remain follow-ups. The current provenance recorder and JSONL/bundle verifier remain scoped to stale context. Matching one reference input does not prove general schema or semantic compatibility, and missing observations are not treated as successful comparisons.
+## Executable Unit-Drift Demonstration
+
+The benchmark module now includes actual synthetic producer/consumer adapters, separate from the recorded fixtures above:
+
+```bash
+./gradlew :benchmarks:runContractScenario --no-daemon
+```
+
+`DurationProducer` encodes a logical duration into JSON, and `DurationConsumer` parses that JSON and applies its assumed unit. Both versions have the same field shape. The permissive consumer deliberately does not enforce the producer's contract version or unit; this models successful parsing with incorrect interpretation rather than an exception or detection signal.
+
+For a 2,000-millisecond input, the reference web client produces `durationMillis:2000`. A coordinated seconds-based v2 producer/client pair also produces 2,000 milliseconds and satisfies consistency. A v2 producer that still sends milliseconds to the seconds-based client produces 2,000,000 milliseconds and violates consistency. A same-version pair with those mismatched assumptions also violates consistency. Detection remains null in all cases.
+
+The experiment retains raw wire payload, producer unit, consumer assumption, logical input, and both evaluated client observations. Repeated execution is deterministic. Unsupported negative durations, lossy integer-second conversions, and arithmetic overflow fail visibly instead of generating misleading outcomes. Zero illustrates a limitation: both unit interpretations yield zero, so the outcome comparison does not claim a violation for that input.
+
+The command currently prints the three cases; it does not write contract JSONL or reuse the stale-context provenance schema. Contract-specific provenance and independent contract-result verification remain follow-ups. The current provenance recorder and JSONL/bundle verifier remain scoped to stale context. Matching one reference input does not prove general schema or semantic compatibility, and missing observations are not treated as successful comparisons.

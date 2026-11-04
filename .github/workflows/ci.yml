@@ -31,6 +31,9 @@ jobs:
       - name: Run stale-context scenario
         run: ./gradlew :benchmarks:run --no-daemon
 
+      - name: Run contract unit-drift demonstration
+        run: ./gradlew :benchmarks:runContractScenario --no-daemon
+
       - name: Verify scenario evidence
         run: |
           python3 -m unittest discover -s tools -p 'test_*.py'

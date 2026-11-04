@@ -16,3 +16,13 @@ application {
 tasks.named<JavaExec>("run") {
     workingDir(rootProject.projectDir)
 }
+
+tasks.register<JavaExec>("runContractScenario") {
+    group = "application"
+    description = "Run the synthetic cross-client duration contract demonstration"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.intenttrace.benchmarks.ContractUnitDriftMain")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}
