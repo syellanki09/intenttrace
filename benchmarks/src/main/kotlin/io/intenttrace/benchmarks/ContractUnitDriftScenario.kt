@@ -58,21 +58,21 @@ data class ContractUnitExperiment(
     val producerUnit: DurationUnit,
     val consumerUnit: DurationUnit,
     val wirePayload: String,
-    val evaluation: ContractCompatibilityResult
+    val evaluation: ContractCompatibilityResult,
+    val referenceWirePayload: String
 )
 
 /** Execute real serialization and unit interpretation instead of supplying precomputed outcomes. */
 class ContractUnitDriftScenario {
     fun run(durationMillis: Long = 2000): List<ContractUnitExperiment> {
         val inputId = "session-duration-001"
-        val reference = DurationConsumer("web", 1, DurationUnit.MILLISECONDS).decide(
-            DurationProducer(1, DurationUnit.MILLISECONDS).encode(inputId, durationMillis)
-        )
+        val referenceWire = DurationProducer(1, DurationUnit.MILLISECONDS).encode(inputId, durationMillis)
+        val reference = DurationConsumer("web", 1, DurationUnit.MILLISECONDS).decide(referenceWire)
         fun experiment(id: String, version: Long, producerUnit: DurationUnit): ContractUnitExperiment {
             val wire = DurationProducer(version, producerUnit).encode(inputId, durationMillis)
             val observed = DurationConsumer("mobile", version, DurationUnit.SECONDS).decide(wire)
             return ContractUnitExperiment(id, durationMillis, producerUnit, DurationUnit.SECONDS, wire,
-                ContractCompatibilityInvariant().evaluate(reference, observed))
+                ContractCompatibilityInvariant().evaluate(reference, observed), referenceWire)
         }
         return listOf(
             experiment("compatible-upgrade", 2, DurationUnit.SECONDS),
@@ -85,11 +85,6 @@ class ContractUnitDriftScenario {
 object ContractUnitDriftMain {
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.isEmpty()) { "This fixed demonstration accepts no arguments" }
-        ContractUnitDriftScenario().run().forEach {
-            println("${it.caseId}: producerUnit=${it.producerUnit}, consumerUnit=${it.consumerUnit}, " +
-                "reference=${it.evaluation.reference.outcome}, observed=${it.evaluation.observed.outcome}, " +
-                "${it.evaluation.status}, detected=${it.evaluation.detected}")
-        }
+        runContractResults(args)
     }
 }

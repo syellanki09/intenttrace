@@ -18,6 +18,7 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.register<JavaExec>("runContractScenario") {
+    workingDir(rootProject.projectDir)
     group = "application"
     description = "Run the synthetic cross-client duration contract demonstration"
     classpath = sourceSets.main.get().runtimeClasspath

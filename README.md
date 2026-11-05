@@ -104,7 +104,7 @@ The `provenance` module records decision evidence, evaluation results, and repro
 
 ## Contract Evaluation
 
-The [cross-client contract evaluator](docs/contract-compatibility.md) compares outcomes for the same logical input. Run `./gradlew :benchmarks:runContractScenario --no-daemon` for a synthetic JSON producer/consumer unit-drift demonstration. Contract result-file/provenance support remains planned; the JSONL and bundle tools still apply only to stale context.
+The [cross-client contract evaluator](docs/contract-compatibility.md) compares outcomes for the same logical input. Run `./gradlew :benchmarks:runContractScenario --no-daemon` for a synthetic JSON producer/consumer unit-drift demonstration with versioned provenance in `benchmarks/build/results/contract-unit-drift/results.jsonl`. Check it with `python3 tools/verify_contract_results.py benchmarks/build/results/contract-unit-drift/results.jsonl`. The existing stale-context verifier and ZIP bundle tools remain separate.
 
 ## Release Preparation
 
