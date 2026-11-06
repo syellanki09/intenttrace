@@ -86,7 +86,7 @@ internal data class RunnerOptions(val output: Path, val sourceCommit: String?, v
     }
 }
 
-private fun git(vararg arguments: String): String {
+internal fun git(vararg arguments: String): String {
     val process = ProcessBuilder(listOf("git") + arguments).redirectErrorStream(true).start()
     val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
     check(process.waitFor() == 0) { "Unable to read Git metadata; run from the checkout or supply --source-commit SHA" }

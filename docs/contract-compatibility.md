@@ -36,4 +36,23 @@ For a 2,000-millisecond input, the reference web client produces `durationMillis
 
 The experiment retains raw wire payload, producer unit, consumer assumption, logical input, and both evaluated client observations. Repeated execution is deterministic. Unsupported negative durations, lossy integer-second conversions, and arithmetic overflow fail visibly instead of generating misleading outcomes. Zero illustrates a limitation: both unit interpretations yield zero, so the outcome comparison does not claim a violation for that input.
 
-The command currently prints the three cases; it does not write contract JSONL or reuse the stale-context provenance schema. Contract-specific provenance and independent contract-result verification remain follow-ups. The current provenance recorder and JSONL/bundle verifier remain scoped to stale context. Matching one reference input does not prove general schema or semantic compatibility, and missing observations are not treated as successful comparisons.
+## Machine-Readable Evidence
+
+The command prints the three cases and writes `benchmarks/build/results/contract-unit-drift/results.jsonl`, replacing earlier output. The version-1 contract record includes reproduction metadata, case ID, logical duration, raw reference and observed wire payloads, producer/consumer unit assumptions, both client observations, the canonical failure-class ID, invariant status, and nullable detection. It is a separate format from context provenance; no context versions or event timestamps are fabricated.
+
+Verify the generated file independently:
+
+```bash
+python3 tools/verify_contract_results.py benchmarks/build/results/contract-unit-drift/results.jsonl
+```
+
+The Python verifier parses the raw wire strings independently of Kotlin, recomputes integer-second interpretation, and checks reference/observed outcomes and the resulting status. It also checks fixed case order, units, contract versions, shared reproduction metadata, and absent detection signals. It is intentionally scoped to the fixed version-1, 2,000-millisecond experiment, not an arbitrary contract schema or authenticity proof.
+
+```bash
+./gradlew :benchmarks:runContractScenario --args="--output /tmp/contract-results.jsonl"
+./gradlew :benchmarks:runContractScenario --args="--help"
+```
+
+Git source identity and working-tree dirtiness are captured automatically. Source archives can pass `--source-commit FULL_SHA`, which is explicitly marked caller-supplied. Repeated execution on the same source/runtime produces equivalent records; runtime and source metadata differ across environments. CI verifies and retains raw contract JSONL as a separate artifact for 30 days.
+
+The stale-context JSONL/bundle tools remain scoped to stale context; contract evidence is not fed through those tools. Matching one reference input does not prove general schema or semantic compatibility, and missing observations are not treated as successful comparisons.

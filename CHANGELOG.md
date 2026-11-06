@@ -12,10 +12,11 @@
 - One-command scenario execution, validated JSON configuration, and JSONL output.
 - Independent result verification, reproducible evidence bundles, and offline bundle checks.
 - Clean-checkout reproduction instructions and CI tests with retained evidence artifacts.
+- Executable cross-client unit-drift experiments with contract-specific provenance, JSONL output, and independent wire-evidence verification.
 
 ### Preview Limitations
 
-- Only the stale-context failure class has an executable scenario; the other taxonomy entries describe planned scope.
+- Executable scenarios cover stale context and a narrow synthetic duration-contract unit mismatch; the other taxonomy entries describe planned scope.
 - No system detection signal is implemented. A violated invariant does not imply successful detection.
 - Event and ingestion stages are not modeled; their provenance fields remain unavailable.
 - The current build is `0.1.0-SNAPSHOT`. No release date, tagged reference result, or archival DOI is established by this changelog.
