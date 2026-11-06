@@ -13,6 +13,8 @@ This is preparation for a future preview, not a release announcement. The curren
 
 ## Verify the Exact Source
 
+Use the [cold-cache reproduction workflow](clean-reproduction.md) to check the final candidate without restored Gradle caches. Review its exact checked-out SHA, build log, and verified artifact before publication.
+
 Use a fresh checkout of the final candidate, with a clean working tree, JDK 17, and Python 3.9+. Follow the [reproduction guide](reproduction.md), then run:
 
 ```bash
