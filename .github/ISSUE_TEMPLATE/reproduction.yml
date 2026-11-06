@@ -1,0 +1,39 @@
+name: Reproduction failure
+description: Report a failing documented command, unexpected scenario result, or rejected artifact.
+title: "[Reproduction] "
+body:
+  - type: input
+    id: revision
+    attributes:
+      label: Source revision
+      description: Full commit SHA or tag tested; include artifact source identity when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Commands and steps
+      description: Include the exact command and configuration or artifact path used.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+      description: Describe the expected result and what happened instead. Identify whether download, build, execution, or verification failed.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS/architecture, Java version, Python version, and clean/modified checkout status.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs and evidence
+      description: Relevant error output, synthetic JSONL excerpts, workflow URL, or artifact identity. Remove credentials and private data.
+      render: text
