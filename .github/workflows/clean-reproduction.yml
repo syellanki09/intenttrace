@@ -20,8 +20,6 @@ jobs:
     name: Cold-cache reproduction
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      GRADLE_USER_HOME: ${{ runner.temp }}/intenttrace-clean-gradle
     steps:
       - name: Checkout source
         uses: actions/checkout@v7
@@ -31,6 +29,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Select isolated Gradle user home
+        shell: bash
+        run: printf 'GRADLE_USER_HOME=%s/intenttrace-clean-gradle\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
 
       - name: Confirm fresh dependency cache and source
         shell: bash
