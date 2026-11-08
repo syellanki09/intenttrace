@@ -42,7 +42,15 @@ A second area of focus is the reliability of **software development kits and oth
 
 ## Quick Start
 
-From a Git checkout with JDK 17 and network access for Gradle dependencies, run:
+From a clean Git checkout with JDK 17, Python 3.9+, and network access for dependencies, run both demonstrations and prepare a verified review pack:
+
+```bash
+python3 tools/run_preview.py
+```
+
+This builds and tests the project, independently verifies five case results, and prints the location of a ZIP and JSON summary under `build/preview/`. See the [preview walkthrough](docs/preview-walkthrough.md) for expected results, archive contents, and how to give feedback. This is an experimental review pack, not a tagged release.
+
+To run only the stale-context demonstration:
 
 ```bash
 ./gradlew :benchmarks:run --no-daemon
