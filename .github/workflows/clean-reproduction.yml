@@ -6,11 +6,17 @@ on:
     paths:
       - .github/workflows/clean-reproduction.yml
       - docs/clean-reproduction.md
+      - docs/preview-walkthrough.md
+      - tools/run_preview.py
+      - tools/test_run_preview.py
   push:
     branches: [main]
     paths:
       - .github/workflows/clean-reproduction.yml
       - docs/clean-reproduction.md
+      - docs/preview-walkthrough.md
+      - tools/run_preview.py
+      - tools/test_run_preview.py
 
 permissions:
   contents: read
@@ -43,29 +49,18 @@ jobs:
           mkdir -p "$RUNNER_TEMP/intenttrace-reproduction"
           git rev-parse HEAD | tee "$RUNNER_TEMP/intenttrace-reproduction/source-commit.txt"
 
-      - name: Build and run both demonstrations without restored Gradle caches
+      - name: Prepare the complete verified preview without restored Gradle caches
         shell: bash
-        run: |
-          set -euo pipefail
-          ./gradlew clean test :benchmarks:run :benchmarks:runContractScenario --no-daemon 2>&1 | tee "$RUNNER_TEMP/intenttrace-reproduction/build.log"
-
-      - name: Independently verify and package stale-context evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m unittest discover -s tools -p 'test_*.py'
-          python3 tools/verify_results.py benchmarks/build/results/stale-context/results.jsonl
-          python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
-          python3 tools/verify_bundle.py benchmarks/build/results/stale-context-bundle.zip
+        run: python3 tools/run_preview.py
 
       - name: Retain verified reproduction evidence
         uses: actions/upload-artifact@v4
         with:
           name: clean-preview-${{ github.sha }}
           path: |
-            benchmarks/build/results/stale-context-bundle.zip
+            build/preview/**/preview.zip
+            build/preview/**/report.json
             ${{ runner.temp }}/intenttrace-reproduction/source-commit.txt
-            ${{ runner.temp }}/intenttrace-reproduction/build.log
           if-no-files-found: error
           retention-days: 30
 
@@ -76,6 +71,7 @@ jobs:
           name: clean-preview-failure-${{ github.sha }}
           path: |
             ${{ runner.temp }}/intenttrace-reproduction/
+            build/preview/**/build.log
             **/build/test-results/test/*.xml
           if-no-files-found: warn
           retention-days: 7
