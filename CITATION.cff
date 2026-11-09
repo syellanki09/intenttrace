@@ -9,6 +9,9 @@ abstract: >-
   driving the final decision is stale, missing, delayed, duplicated,
   conflicting, or misinterpreted.
 type: software
+version: "0.1.0-preview.1"
+date-released: "2026-11-09"
+url: "https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1"
 authors:
   - family-names: Yellanki
     given-names: Srinivas Kalyan

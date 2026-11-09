@@ -48,7 +48,7 @@ From a clean Git checkout with JDK 17, Python 3.9+, and network access for depen
 python3 tools/run_preview.py
 ```
 
-This builds and tests the project, independently verifies five case results, and prints the location of a ZIP and JSON summary under `build/preview/`. See the [preview walkthrough](docs/preview-walkthrough.md) for expected results, archive contents, and how to give feedback. This is an experimental review pack, not a tagged release.
+This builds and tests the project, independently verifies five case results, and prints the location of a ZIP and JSON summary under `build/preview/`. See the [preview walkthrough](docs/preview-walkthrough.md) for expected results, archive contents, and how to give feedback. For the versioned experimental preview, check out `v0.1.0-preview.1` before running the command.
 
 To run only the stale-context demonstration:
 
@@ -67,7 +67,7 @@ Each record includes context evidence and scenario/runtime metadata. The command
 ./gradlew clean test --no-daemon
 ```
 
-For source archives without Git metadata, supply `--source-commit` with the full source commit ID; this is recorded as caller-supplied rather than verified. This is a synthetic demonstration, not a tagged reference release.
+For source archives without Git metadata, supply `--source-commit` with the full source commit ID; this is recorded as caller-supplied rather than verified. This remains a synthetic demonstration, not evidence of production reliability.
 
 ## Repository Layout
 
@@ -116,7 +116,7 @@ The [cross-client contract evaluator](docs/contract-compatibility.md) compares o
 
 ## Release Preparation
 
-Release preparation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Neither document announces a release or archival identifier.
+Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). No archival DOI is established.
 
 ## Related work
 
