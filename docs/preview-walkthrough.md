@@ -4,9 +4,10 @@ This walkthrough prepares a review pack from a specific Git commit. It does not 
 
 ## One Command
 
-From a clean checkout:
+From a clean checkout, select the versioned preview (or stay on main to test development changes):
 
 ```bash
+git checkout v0.1.0-preview.1
 python3 tools/run_preview.py
 ```
 
@@ -45,6 +46,6 @@ The working demonstrations cover stale-context selection and a fixed synthetic d
 
 Try the walkthrough, inspect a violated record, and report the full source SHA, environment, exact command, and whether the result was understandable. Use the repository's **Reproduction failure** or **Usage feedback or suggestion** issue form. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed steps. Successful independent attempts are useful evidence too; report what you actually ran.
 
-## Draft Preview Notes
+## Versioned Preview
 
-The candidate brings together two executable demonstrations, separate versioned provenance formats, independent output verification, a single review command, and contributor feedback forms. Before a public versioned release, a maintainer must review the candidate, select the version/date, reconcile citation metadata, tag the verified final commit, and preserve its evidence outside temporary CI retention. See the [release checklist](release-checklist.md). No release date or archival identifier is asserted here.
+The `v0.1.0-preview.1` prerelease brings together two executable demonstrations, separate versioned provenance formats, independent output verification, a single review command, and contributor feedback forms. See its [release notes](releases/v0.1.0-preview.1.md) and the [release checklist](release-checklist.md). APIs and result formats remain experimental. No archival identifier is asserted.

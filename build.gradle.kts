@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.intenttrace"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0-preview.1"
 
 subprojects {
     group = rootProject.group

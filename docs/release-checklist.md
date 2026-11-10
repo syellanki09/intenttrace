@@ -1,6 +1,6 @@
 # Research Preview Release Checklist
 
-This is preparation for a future preview, not a release announcement. The current build remains `0.1.0-SNAPSHOT`. A maintainer chooses the version, release date, and publication timing after reviewing the evidence.
+Use this checklist for each preview release. A maintainer chooses the version, release date, and publication timing after reviewing the evidence. See the [changelog](../CHANGELOG.md) for versioned changes.
 
 ## Candidate and Metadata
 
