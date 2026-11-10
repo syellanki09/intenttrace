@@ -29,6 +29,20 @@ On success it prints the location of a new `build/preview/<commit-prefix>-<run-i
 
 ## Inspect the Pack
 
+Verify a downloaded `preview.zip` offline using Python 3.9+ from a checkout
+containing the verifier (no JDK, Gradle, or dependency downloads are needed):
+
+```bash
+python3 tools/verify_preview.py /path/to/preview.zip
+```
+
+This checks archive membership, evidence hashes and sizes, both demonstrations,
+the nested bundle, shared clean-source/runtime metadata, and the report summaries.
+It rejects inconsistent evidence even when its checksums have been recomputed.
+It does not execute or authenticate the recorded source, validate build-log
+claims, or establish independent human reproduction. Each outer archive member
+is limited to 16 MiB during verification.
+
 The archive contains:
 
 - `report.json`: exact source SHA, runtime details, per-case statuses and detection observations, and evidence SHA-256/byte counts.

@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-No changes yet.
+- Offline verification of the complete preview pack, including independent
+  scenario checks, report consistency, and bounded archive reads.
 
 ## 0.1.0-preview.1 - 2026-11-09
 

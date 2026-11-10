@@ -15,6 +15,7 @@ from bundle_results import bundle
 from verify_bundle import verify_bundle
 from verify_contract_results import verify_contract_results
 from verify_results import verify
+from verify_preview import verify_preview
 
 
 def collect_preview(stale_results, contract_results, destination, source_commit):
@@ -90,6 +91,7 @@ def run_preview(repository):
         collect_preview(repository / "benchmarks/build/results/stale-context/results.jsonl",
                         repository / "benchmarks/build/results/contract-unit-drift/results.jsonl",
                         destination, source)
+        verify_preview(destination / "preview.zip")
     except Exception:
         (destination / "report.json").unlink(missing_ok=True)
         (destination / "preview.zip").unlink(missing_ok=True)
