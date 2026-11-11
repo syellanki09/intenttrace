@@ -39,6 +39,10 @@ This roadmap describes the technical progression of the reference implementation
 
 ## Milestone 4 - Event-time and replay integrity
 
+Implemented: a [fixed duplicate-replay demonstration](docs/duplicate-replay.md)
+with naive/idempotent comparison, delivery evidence, and independent verification.
+Event-time ordering, durable replay handling, and reconciliation remain planned.
+
 - Event-time vs processing-time scenarios
 - Delayed/out-of-order events
 - Duplicate/replayed information

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Executable duplicate-replay control, naive replay, and idempotent replay
+  comparisons with independent evaluation, versioned event evidence, a Python
+  verifier, and retained CI results.
+
 - Offline verification of the complete preview pack, including independent
   scenario checks, report consistency, and bounded archive reads.
 

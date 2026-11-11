@@ -40,6 +40,19 @@ jobs:
           python3 tools/verify_results.py benchmarks/build/results/stale-context/results.jsonl
           python3 tools/verify_contract_results.py benchmarks/build/results/contract-unit-drift/results.jsonl
 
+      - name: Run and verify duplicate-replay demonstration
+        run: |
+          ./gradlew :benchmarks:runReplayScenario --no-daemon
+          python3 tools/verify_replay_results.py benchmarks/build/results/duplicate-replay/results.jsonl
+
+      - name: Retain replay evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplicate-replay-${{ github.sha }}
+          path: benchmarks/build/results/duplicate-replay/results.jsonl
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Package reproduction evidence
         run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
 

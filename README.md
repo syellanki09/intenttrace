@@ -114,6 +114,16 @@ The `provenance` module records decision evidence, evaluation results, and repro
 
 The [cross-client contract evaluator](docs/contract-compatibility.md) compares outcomes for the same logical input. Run `./gradlew :benchmarks:runContractScenario --no-daemon` for a synthetic JSON producer/consumer unit-drift demonstration with versioned provenance in `benchmarks/build/results/contract-unit-drift/results.jsonl`. Check it with `python3 tools/verify_contract_results.py benchmarks/build/results/contract-unit-drift/results.jsonl`. The existing stale-context verifier and ZIP bundle tools remain separate.
 
+## Duplicate Replay
+
+The [duplicate-replay demonstration](docs/duplicate-replay.md) compares normal
+delivery, naive replay, and deduplication by event identity. Run
+`./gradlew :benchmarks:runReplayScenario --no-daemon`, then verify the resulting
+JSONL with `python3 tools/verify_replay_results.py benchmarks/build/results/duplicate-replay/results.jsonl`.
+The expected totals are 8, 11, and 8; only naive replay violates the invariant.
+Detection observations remain null. This scenario runs separately from the
+released five-case preview pack.
+
 ## Release Preparation
 
 Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). No archival DOI is established.

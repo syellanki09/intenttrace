@@ -68,6 +68,13 @@ Event ID, event time, and ingestion time remain null for this context-only scena
 ### `benchmarks/`
 `StaleContextScenario` runs fixed control and injected paths and returns provenance records. The application entry point captures runtime and source metadata, writes two JSONL records, and prints evaluation summaries. Run `./gradlew :benchmarks:run --no-daemon` from the checkout; see the README for output paths and arguments. Tagged reference bundles remain planned.
 
+The [duplicate-replay demonstration](duplicate-replay.md) extends the benchmarks
+with a fixed ordered delivery stream. `ReplayInvariant` evaluates applied event
+identities and the observed accumulator total against unique logical events.
+Replay-specific provenance preserves each delivery and application marker;
+its Python verifier independently recomputes the fixed experiment. Event-time
+ordering and durable deduplication remain future work.
+
 ## Scenario contract
 
 Every executable scenario must define:
