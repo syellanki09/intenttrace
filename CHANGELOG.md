@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Executable event-time ordering, reconciliation, and late-arrival comparisons
+  with independent evaluation, occurrence/ingestion/decision timestamps,
+  canonical stale/delayed classifications, JSONL verification, and CI evidence.
+
 - Executable duplicate-replay control, naive replay, and idempotent replay
   comparisons with independent evaluation, versioned event evidence, a Python
   verifier, and retained CI results.

@@ -53,6 +53,19 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Run and verify event-time demonstration
+        run: |
+          ./gradlew :benchmarks:runEventTimeScenario --no-daemon
+          python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl
+
+      - name: Retain event-time evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: event-time-ordering-${{ github.sha }}
+          path: benchmarks/build/results/event-time-ordering/results.jsonl
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Package reproduction evidence
         run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
 

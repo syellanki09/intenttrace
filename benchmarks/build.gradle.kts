@@ -28,6 +28,17 @@ tasks.named<JavaExec>("run") {
     workingDir(rootProject.projectDir)
 }
 
+tasks.register<JavaExec>("runEventTimeScenario") {
+    workingDir(rootProject.projectDir)
+    group = "application"
+    description = "Run the synthetic delayed and out-of-order event demonstration"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.intenttrace.benchmarks.EventTimeMain")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}
+
 tasks.register<JavaExec>("runContractScenario") {
     workingDir(rootProject.projectDir)
     group = "application"

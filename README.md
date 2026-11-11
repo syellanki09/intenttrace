@@ -124,6 +124,16 @@ The expected totals are 8, 11, and 8; only naive replay violates the invariant.
 Detection observations remain null. This scenario runs separately from the
 released five-case preview pack.
 
+## Event Time and Late Arrival
+
+The [event-time demonstration](docs/event-time-ordering.md) compares ordered
+delivery, an older event arriving last, event-time reconciliation, and a newer
+event arriving after the decision. Run
+`./gradlew :benchmarks:runEventTimeScenario --no-daemon`, then
+`python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl`.
+The expected statuses are SATISFIED, VIOLATED, SATISFIED, VIOLATED. Event,
+ingestion, and decision timestamps explain each result; detection remains null.
+
 ## Release Preparation
 
 Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). No archival DOI is established.
