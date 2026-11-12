@@ -41,7 +41,10 @@ This roadmap describes the technical progression of the reference implementation
 
 Implemented: a [fixed duplicate-replay demonstration](docs/duplicate-replay.md)
 with naive/idempotent comparison, delivery evidence, and independent verification.
-Event-time ordering, durable replay handling, and reconciliation remain planned.
+An [event-time ordering demonstration](docs/event-time-ordering.md) now compares
+arrival-order processing, event-time reconciliation, and an event arriving after
+the decision boundary, with three-clock evidence and independent verification.
+Durable replay handling, watermarks, and repair of published decisions remain planned.
 
 - Event-time vs processing-time scenarios
 - Delayed/out-of-order events

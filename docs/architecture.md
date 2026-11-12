@@ -72,8 +72,15 @@ The [duplicate-replay demonstration](duplicate-replay.md) extends the benchmarks
 with a fixed ordered delivery stream. `ReplayInvariant` evaluates applied event
 identities and the observed accumulator total against unique logical events.
 Replay-specific provenance preserves each delivery and application marker;
-its Python verifier independently recomputes the fixed experiment. Event-time
-ordering and durable deduplication remain future work.
+its Python verifier independently recomputes the fixed experiment. Durable
+deduplication remains future work.
+
+The [event-time demonstration](event-time-ordering.md) preserves occurrence,
+ingestion, and decision clocks separately. The system path considers only arrivals
+available at the boundary; `EventTimeInvariant` compares its selection against
+harness logical history. Reordered selection is classified as stale context;
+latest state arriving too late is classified as delayed events. The Python
+verifier recomputes selection and evaluation from the recorded timeline.
 
 ## Scenario contract
 

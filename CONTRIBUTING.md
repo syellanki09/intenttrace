@@ -15,6 +15,8 @@ python3 tools/verify_results.py benchmarks/build/results/stale-context/results.j
 ./gradlew :benchmarks:runContractScenario --no-daemon
 ./gradlew :benchmarks:runReplayScenario --no-daemon
 python3 tools/verify_replay_results.py benchmarks/build/results/duplicate-replay/results.jsonl
+./gradlew :benchmarks:runEventTimeScenario --no-daemon
+python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl
 ```
 
 Record the source commit, commands, runtime, and observed results. The stale-context pair should evaluate SATISFIED then VIOLATED; the contract demonstration should show a compatible upgrade and two unit-drift violations. Detection observations remain unknown, not successful detection. Consult the documentation at the exact revision you tested for the supported output formats.
@@ -26,7 +28,8 @@ Record the source commit, commands, runtime, and observed results. The stale-con
 | Stale-context decisions | Executable paired scenario, provenance, JSONL, verification, and evidence bundles |
 | Contract compatibility | Synthetic duration-unit comparison and producer/consumer demonstration; see revision-specific contract docs for output support |
 | Duplicate replay | [Fixed replay/idempotency scenario](docs/duplicate-replay.md), event-level JSONL evidence, and independent verification |
-| Missing/delayed/conflicting information | Taxonomy and selected decision semantics; no complete executable benchmark for these classes |
+| Event-time ordering and delayed events | [Fixed ordering/reconciliation/late-arrival scenario](docs/event-time-ordering.md), three-clock provenance, JSONL, and independent verification |
+| Missing/conflicting information | Taxonomy and selected decision semantics; no complete executable benchmark for these classes |
 | System detection | No independent detector is implemented; null observations remain unknown |
 | Releases and archival identifiers | Preview preparation; use actual published repository metadata rather than assuming a tagged release or DOI |
 
