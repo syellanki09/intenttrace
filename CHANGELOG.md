@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- One-command execution of all four demonstrations and 12 cases, with a versioned
+  combined suite report, independently verified evidence bundle, offline suite
+  verification, and cold-cache CI reproduction.
+
 - Executable event-time ordering, reconciliation, and late-arrival comparisons
   with independent evaluation, occurrence/ingestion/decision timestamps,
   canonical stale/delayed classifications, JSONL verification, and CI evidence.

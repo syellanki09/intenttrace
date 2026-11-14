@@ -4,6 +4,11 @@ IntentTrace is an experimental clean-room research framework. Reproduction attem
 
 ## Try the Existing Scenarios
 
+For all four demonstrations and a verified 12-case bundle, run
+`python3 tools/run_suite.py` from a clean checkout. The
+[suite walkthrough](docs/scenario-suite.md) explains outcomes and Python-only
+offline verification with `tools/verify_suite.py`.
+
 Start with the [README](README.md), [stale-context reproduction guide](docs/reproduction.md), and [contract demonstration](docs/contract-compatibility.md). Use a clean Git checkout, JDK 17, and Python 3.9+ for independent output checks. First builds need network access for dependencies.
 
 ```bash

@@ -53,6 +53,10 @@ Durable replay handling, watermarks, and repair of published decisions remain pl
 
 ## Milestone 5 - External reproduction and extensibility
 
+Implemented: a [complete scenario suite](docs/scenario-suite.md) runs all four
+demonstrations and packages 12 independently verified cases in one command,
+with a combined report and Python-only offline verification.
+
 - Contributor-friendly scenario interface
 - Structured reproduction issue/report template
 - Additional scenarios proposed or reproduced by external users
