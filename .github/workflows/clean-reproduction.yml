@@ -9,6 +9,10 @@ on:
       - docs/preview-walkthrough.md
       - tools/run_preview.py
       - tools/test_run_preview.py
+      - tools/run_suite.py
+      - tools/verify_suite.py
+      - tools/test_suite.py
+      - docs/scenario-suite.md
   push:
     branches: [main]
     paths:
@@ -17,6 +21,10 @@ on:
       - docs/preview-walkthrough.md
       - tools/run_preview.py
       - tools/test_run_preview.py
+      - tools/run_suite.py
+      - tools/verify_suite.py
+      - tools/test_suite.py
+      - docs/scenario-suite.md
 
 permissions:
   contents: read
@@ -49,17 +57,17 @@ jobs:
           mkdir -p "$RUNNER_TEMP/intenttrace-reproduction"
           git rev-parse HEAD | tee "$RUNNER_TEMP/intenttrace-reproduction/source-commit.txt"
 
-      - name: Prepare the complete verified preview without restored Gradle caches
+      - name: Prepare the complete scenario suite without restored Gradle caches
         shell: bash
-        run: python3 tools/run_preview.py
+        run: python3 tools/run_suite.py
 
       - name: Retain verified reproduction evidence
         uses: actions/upload-artifact@v4
         with:
           name: clean-preview-${{ github.sha }}
           path: |
-            build/preview/**/preview.zip
-            build/preview/**/report.json
+            build/suite/**/suite.zip
+            build/suite/**/suite-report.json
             ${{ runner.temp }}/intenttrace-reproduction/source-commit.txt
           if-no-files-found: error
           retention-days: 30
@@ -71,7 +79,7 @@ jobs:
           name: clean-preview-failure-${{ github.sha }}
           path: |
             ${{ runner.temp }}/intenttrace-reproduction/
-            build/preview/**/build.log
+            build/suite/**/build.log
             **/build/test-results/test/*.xml
           if-no-files-found: warn
           retention-days: 7

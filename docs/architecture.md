@@ -82,6 +82,12 @@ harness logical history. Reordered selection is classified as stale context;
 latest state arriving too late is classified as delayed events. The Python
 verifier recomputes selection and evaluation from the recorded timeline.
 
+The [complete scenario suite](scenario-suite.md) executes the four implemented
+demonstrations and independently verifies all 12 results. Its versioned suite
+report combines summaries only after checking common clean-source and runtime
+identity. A suite ZIP nests the compatible five-case preview alongside replay
+and event-time JSONL; the offline suite verifier validates each format.
+
 ## Scenario contract
 
 Every executable scenario must define:

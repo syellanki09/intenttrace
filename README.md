@@ -42,13 +42,17 @@ A second area of focus is the reliability of **software development kits and oth
 
 ## Quick Start
 
-From a clean Git checkout with JDK 17, Python 3.9+, and network access for dependencies, run both demonstrations and prepare a verified review pack:
+From a clean Git checkout with JDK 17, Python 3.9+, and network access for dependencies, run all four demonstrations and prepare a verified suite:
 
 ```bash
-python3 tools/run_preview.py
+python3 tools/run_suite.py
 ```
 
-This builds and tests the project, independently verifies five case results, and prints the location of a ZIP and JSON summary under `build/preview/`. See the [preview walkthrough](docs/preview-walkthrough.md) for expected results, archive contents, and how to give feedback. For the versioned experimental preview, check out `v0.1.0-preview.1` before running the command.
+This builds and tests the project, independently verifies 12 case results, and
+prints the location of `suite.zip` and a JSON summary under `build/suite/`. See
+the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents,
+offline verification, and feedback. For the published `v0.1.0-preview.1`, check
+out that tag and use its five-case `python3 tools/run_preview.py` command.
 
 To run only the stale-context demonstration:
 
