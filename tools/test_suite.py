@@ -136,7 +136,7 @@ class SuiteRunnerTest(unittest.TestCase):
     def test_failed_build_preserves_diagnostics_without_successful_bundle(self):
         with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             with patch("run_suite.subprocess.check_output", side_effect=["a" * 40, ""]), \
-                 patch("run_suite.subprocess.run", side_effect=subprocess.CalledProcessError(1, "gradle")):
+                 patch("run_suite.run_logged", side_effect=subprocess.CalledProcessError(1, "gradle")):
                 with self.assertRaises(subprocess.CalledProcessError):
                     run_suite(directory)
             root = Path(directory) / "build/suite"
@@ -147,7 +147,8 @@ class SuiteRunnerTest(unittest.TestCase):
     def test_source_changes_abort_before_evidence_collection(self):
         with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             with patch("run_suite.subprocess.check_output", side_effect=["a" * 40, "", "b" * 40]), \
-                 patch("run_suite.subprocess.run"), patch("run_suite.collect_suite") as collect:
+                 patch("run_suite.run_logged"), patch("run_suite.verify_scenario"), \
+                 patch("run_suite.collect_suite") as collect:
                 with self.assertRaisesRegex(ValueError, "Source changed"):
                     run_suite(directory)
                 collect.assert_not_called()
@@ -155,7 +156,7 @@ class SuiteRunnerTest(unittest.TestCase):
     def test_dirty_checkout_cannot_start_build(self):
         with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             with patch("run_suite.subprocess.check_output", side_effect=["a" * 40, " M source"]), \
-                 patch("run_suite.subprocess.run") as build:
+                 patch("run_suite.run_logged") as build:
                 with self.assertRaisesRegex(ValueError, "clean Git"):
                     run_suite(directory)
                 build.assert_not_called()

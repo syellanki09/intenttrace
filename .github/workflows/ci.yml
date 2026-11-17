@@ -87,3 +87,17 @@ jobs:
           path: benchmarks/build/results/contract-unit-drift/results.jsonl
           if-no-files-found: error
           retention-days: 30
+
+      - name: Package and independently verify the complete suite
+        run: python3 tools/run_suite.py --package-only
+
+      - name: Retain complete suite evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: intenttrace-suite-${{ github.sha }}
+          path: |
+            build/suite/**/suite.zip
+            build/suite/**/manifest.json
+            build/suite/**/suite-report.json
+          if-no-files-found: error
+          retention-days: 30

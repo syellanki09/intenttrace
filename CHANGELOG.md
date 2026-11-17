@@ -5,6 +5,11 @@
 - One-command execution of all four demonstrations and 12 cases, with a versioned
   combined suite report, independently verified evidence bundle, offline suite
   verification, and cold-cache CI reproduction.
+- A version-1 raw-evidence manifest with independently checked record counts,
+  hashes, canonical scenario/failure IDs, paths, and verification flags;
+  deterministic suite packaging; live scenario diagnostics; and consolidated
+  reference results. Normal CI packages and verifies its existing granular outputs.
+  Indexed suite reports use version 2; version-1 suites remain readable.
 
 - Executable event-time ordering, reconciliation, and late-arrival comparisons
   with independent evaluation, occurrence/ingestion/decision timestamps,

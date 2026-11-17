@@ -54,6 +54,14 @@ the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents,
 offline verification, and feedback. For the published `v0.1.0-preview.1`, check
 out that tag and use its five-case `python3 tools/run_preview.py` command.
 
+## Complete Reliability Suite
+
+`python3 tools/run_suite.py` executes and independently verifies four implemented
+experiment families. Its manifest indexes all four raw JSONL files with hashes,
+record counts, canonical identifiers, and verification status. See the
+[consolidated reference results](docs/reference-results.md) for invariants,
+synthetic inputs, control/failure outcomes, comparisons, commands, and limitations.
+
 To run only the stale-context demonstration:
 
 ```bash
