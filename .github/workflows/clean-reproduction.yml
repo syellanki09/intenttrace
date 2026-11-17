@@ -12,7 +12,10 @@ on:
       - tools/run_suite.py
       - tools/verify_suite.py
       - tools/test_suite.py
+      - tools/test_run_suite.py
+      - tools/test_verify_suite.py
       - docs/scenario-suite.md
+      - docs/reference-results.md
   push:
     branches: [main]
     paths:
@@ -24,7 +27,10 @@ on:
       - tools/run_suite.py
       - tools/verify_suite.py
       - tools/test_suite.py
+      - tools/test_run_suite.py
+      - tools/test_verify_suite.py
       - docs/scenario-suite.md
+      - docs/reference-results.md
 
 permissions:
   contents: read
@@ -68,6 +74,7 @@ jobs:
           path: |
             build/suite/**/suite.zip
             build/suite/**/suite-report.json
+            build/suite/**/manifest.json
             ${{ runner.temp }}/intenttrace-reproduction/source-commit.txt
           if-no-files-found: error
           retention-days: 30

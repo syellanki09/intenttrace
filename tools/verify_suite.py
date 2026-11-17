@@ -8,9 +8,45 @@ import zipfile
 from pathlib import Path
 
 from verify_event_time_results import verify_event_time_results
+from verify_contract_results import verify_contract_results
 from verify_preview import verify_preview
 from verify_replay_results import verify_replay_results
-from verify_results import exact_integer, load_json
+from verify_results import exact_integer, load_json, verify
+
+
+SCENARIOS = (
+    ("stale-context", "stale-context.jsonl", verify),
+    ("contract-unit-drift", "contract-unit-drift.jsonl", verify_contract_results),
+    ("duplicate-replay", "duplicate-replay.jsonl", verify_replay_results),
+    ("event-time-ordering", "event-time-ordering.jsonl", verify_event_time_results),
+)
+
+
+def verified_manifest(directory):
+    directory = Path(directory)
+    scenarios = []
+    reference = None
+    for scenario_id, name, verifier in SCENARIOS:
+        path = directory / name
+        try:
+            records = verifier(path)
+        except (ValueError, KeyError, TypeError, OSError) as error:
+            raise ValueError(f"{scenario_id}: {error}") from error
+        for row in records:
+            metadata = row["reproduction"]
+            if reference is None:
+                reference = metadata
+            if (metadata["sourceCommitSha"] != reference["sourceCommitSha"]
+                    or metadata["configuration"].get("sourceDirty") != "false"):
+                raise ValueError(f"{scenario_id}: evidence must share one clean source commit")
+            if any(metadata[key] != reference[key] for key in ("runtime", "jdk", "operatingSystem")):
+                raise ValueError(f"{scenario_id}: runtime metadata disagrees")
+        failure_ids = sorted({row.get("evaluation", row)["failureClassId"] for row in records})
+        scenarios.append({"id": scenario_id, "verified": True, "recordCount": len(records),
+                          "failureClassIds": failure_ids, "resultPath": name,
+                          "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+    return {"schemaVersion": 1, "sourceCommit": reference["sourceCommitSha"],
+            "sourceDirty": False, "scenarios": scenarios}
 
 
 def verified_suite_summary(preview_path, replay_path, event_time_path):
@@ -41,15 +77,18 @@ def verified_suite_summary(preview_path, replay_path, event_time_path):
 
 def verify_suite(path):
     required = {"suite-report.json", "README.txt", "preview.zip", "duplicate-replay.jsonl", "event-time-ordering.jsonl"}
+    indexed = required | {"manifest.json", "stale-context.jsonl", "contract-unit-drift.jsonl"}
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
-        if len(names) != len(set(names)) or set(names) not in (required, required | {"build.log"}):
+        if len(names) != len(set(names)) or set(names) not in (
+                required, required | {"build.log"}, indexed, indexed | {"build.log"}):
             raise ValueError("Suite must contain unique, expected file names only")
         if any(info.file_size > 16 * 1024 * 1024 for info in archive.infolist()):
             raise ValueError("Suite member exceeds the 16 MiB verification limit")
         contents = {name: archive.read(name) for name in names}
     report = load_json(contents["suite-report.json"])
-    if not exact_integer(report["suiteReportVersion"], 1):
+    version = 2 if "manifest.json" in contents else 1
+    if not exact_integer(report["suiteReportVersion"], version):
         raise ValueError("Unsupported suite report version")
     evidence = set(names) - {"suite-report.json", "README.txt"}
     if set(report["files"]) != evidence:
@@ -61,10 +100,22 @@ def verify_suite(path):
             raise ValueError(f"Checksum or size mismatch: {name}")
     with tempfile.TemporaryDirectory(prefix="intenttrace-suite-verify-") as directory:
         root = Path(directory)
-        for name in ("preview.zip", "duplicate-replay.jsonl", "event-time-ordering.jsonl"):
+        for name in set(names) - {"suite-report.json", "README.txt", "build.log"}:
             (root / name).write_bytes(contents[name])
         expected = verified_suite_summary(root / "preview.zip", root / "duplicate-replay.jsonl",
                                           root / "event-time-ordering.jsonl")
+        if version == 2:
+            manifest = load_json(contents["manifest.json"])
+            if not exact_integer(manifest["schemaVersion"], 1):
+                raise ValueError("Unsupported suite manifest version")
+            computed = verified_manifest(root)
+            if json.dumps(manifest, sort_keys=True) != json.dumps(computed, sort_keys=True):
+                raise ValueError("Suite manifest disagrees with independently verified evidence")
+            with zipfile.ZipFile(root / "preview.zip") as preview:
+                for name in ("stale-context.jsonl", "contract-unit-drift.jsonl"):
+                    if preview.read(name) != contents[name]:
+                        raise ValueError(f"Nested preview disagrees with raw evidence: {name}")
+            expected["suiteReportVersion"] = 2
     actual = {key: value for key, value in report.items() if key != "files"}
     if json.dumps(actual, sort_keys=True) != json.dumps(expected, sort_keys=True):
         raise ValueError("Suite report disagrees with independently verified evidence")

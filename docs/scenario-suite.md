@@ -11,6 +11,8 @@ runs the full Kotlin and Python suites, executes all four demonstrations, checks
 their evidence independently, and prints the location of a new
 `build/suite/COMMIT-RUN/suite.zip` and `suite-report.json`. Each run gets a unique
 directory. The working tree and commit must remain unchanged during execution.
+Output from every subprocess is streamed to the terminal and retained in
+`build.log`. Each scenario is independently verified before the next begins.
 
 ## Expected Outcomes
 
@@ -37,8 +39,13 @@ python3 tools/verify_suite.py /path/to/suite.zip
 
 The archive contains:
 
-- `suite-report.json`: suite schema version 1, exact source SHA, runtime, and all
+- `manifest.json`: manifest schema version 1, full source SHA, clean-source flag,
+  deterministic scenario order, canonical failure IDs, verification status,
+  raw JSONL paths, independently counted records, and SHA-256 hashes.
+- `suite-report.json`: suite report version 2, exact source SHA, runtime, and all
   per-case summaries, plus SHA-256 hashes and byte counts for evidence files.
+- `stale-context.jsonl` and `contract-unit-drift.jsonl`: the original five raw
+  records, also preserved byte-for-byte inside the preview ZIP.
 - `preview.zip`: the existing five-case preview format, including raw context and
   contract JSONL and the independently verified context bundle.
 - `duplicate-replay.jsonl`: three replay cases and delivery/application evidence.
@@ -48,11 +55,17 @@ The archive contains:
   by the suite runner.
 - `README.txt`: source identity, reproduction command, and limitations.
 
-The verifier rejects missing or unexpected members, duplicate filenames, invalid
+The verifier rejects missing or unexpected members, duplicate filenames or
+manifest scenarios, incorrect record counts, invalid
 checksums, false summaries, inconsistent scenario evidence, mixed commits,
 dirty-source evidence, and mixed runtime metadata. It reads known filenames
 without extracting archive paths and limits each member to 16 MiB. The nested
-preview verifier checks its own format and evidence.
+preview verifier checks its own format and evidence. The suite verifier also
+continues to read earlier version-1 suite reports without a manifest.
+
+Archive member order, timestamps, and permissions are stable. Identical evidence
+and logs produce identical ZIP bytes. Runtime details and build logs can differ
+between executions; compare raw evidence and manifests when assessing repeatability.
 
 Checksums establish consistency, not producer authenticity. Offline checking does
 not execute the source or validate build-log claims. Re-running the documented
@@ -65,7 +78,11 @@ A failed build or verification exits nonzero, retains `build.log`, and does not
 leave a successful suite ZIP or suite report for that attempt. Report the full
 commit, command, environment, and relevant diagnostics using the repository's
 reproduction issue form. CI's cold-cache reproduction runs this command and
-retains the resulting suite evidence for 30 days.
+retains the resulting suite evidence for 30 days. Ordinary CI retains a separate
+`intenttrace-suite-SHA` artifact, using `--package-only` after its granular scenario
+checks to avoid rerunning the experiments. That option still verifies all inputs,
+record counts, source identity, and the completed archive, but does not execute
+tests or scenarios itself.
 
 The suite uses existing fixed demonstrations. It does not add production
 integrations, durable processing guarantees, missing/conflicting-information
@@ -73,3 +90,6 @@ benchmarks, or detection claims. See the individual scenario guides for their
 assumptions. The five-case `run_preview.py` and `verify_preview.py` commands and
 published preview artifacts retain their formats; the complete suite is a
 separate bundle with its own versioned report.
+
+See the [reference-results page](reference-results.md) for a consolidated technical
+description of every implemented family.

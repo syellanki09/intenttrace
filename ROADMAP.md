@@ -56,6 +56,9 @@ Durable replay handling, watermarks, and repair of published decisions remain pl
 Implemented: a [complete scenario suite](docs/scenario-suite.md) runs all four
 demonstrations and packages 12 independently verified cases in one command,
 with a combined report and Python-only offline verification.
+Its [consolidated reference results](docs/reference-results.md) summarize the
+implemented experiments. An explicit raw-evidence manifest indexes record counts,
+hashes, and verification status; ordinary and cold-cache CI verify suite archives.
 
 - Contributor-friendly scenario interface
 - Structured reproduction issue/report template
