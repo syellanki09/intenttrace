@@ -2,6 +2,11 @@
 
 Use this checklist for each preview release. A maintainer chooses the version, release date, and publication timing after reviewing the evidence. See the [changelog](../CHANGELOG.md) for versioned changes.
 
+For the complete 12-case preview candidate, start with the
+[preview-2 review checklist](releases/preview-2-review.md) and
+[draft release notes](releases/v0.1.0-preview.2.md). These are preparation
+materials; version, date, and publication remain maintainer decisions.
+
 ## Candidate and Metadata
 
 - Select a reviewed source commit on main and record its full SHA. Avoid a temporary pull-request merge commit as the release candidate.

@@ -11,6 +11,17 @@ runs the full Kotlin and Python suites, executes all four demonstrations, checks
 their evidence independently, and prints the location of a new
 `build/suite/COMMIT-RUN/suite.zip` and `suite-report.json`. Each run gets a unique
 directory. The working tree and commit must remain unchanged during execution.
+To also prepare a review attachment directory in the same run:
+
+```bash
+python3 tools/run_suite.py --release-assets build/release-assets
+```
+
+The new directory contains the verified `suite.zip`, exact `manifest.json` and
+`suite-report.json`, and `SHA256SUMS`, all bound to the same clean source commit.
+Relative attachment paths resolve from the repository root. Existing output
+directories are rejected before starting a build; select a new path for each run.
+This prepares local review files without changing release metadata or publishing.
 Output from every subprocess is streamed to the terminal and retained in
 `build.log`. Each scenario is independently verified before the next begins.
 
@@ -83,6 +94,12 @@ retains the resulting suite evidence for 30 days. Ordinary CI retains a separate
 checks to avoid rerunning the experiments. That option still verifies all inputs,
 record counts, source identity, and the completed archive, but does not execute
 tests or scenarios itself.
+
+Both CI paths now export release review attachments and independently check
+`SHA256SUMS`. Ordinary CI retains `preview-release-assets-SHA`; cold-cache CI
+includes the four files in its existing reproduction artifact. Retention is 30
+days. See the [candidate checklist](releases/preview-2-review.md) for final-source
+review and publication requirements.
 
 The suite uses existing fixed demonstrations. It does not add production
 integrations, durable processing guarantees, missing/conflicting-information
