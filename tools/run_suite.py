@@ -12,6 +12,7 @@ import zipfile
 from pathlib import Path
 
 from run_preview import collect_preview
+from prepare_release_assets import prepare_release_assets
 from verify_suite import SCENARIOS, verified_manifest, verified_suite_summary, verify_suite
 
 
@@ -102,7 +103,7 @@ def collect_suite(stale, contract, replay, events, destination, source_commit):
     return report
 
 
-def run_suite(repository, package_only=False):
+def run_suite(repository, package_only=False, release_assets=None):
     repository = Path(repository).resolve()
 
     def git(*args):
@@ -111,6 +112,9 @@ def run_suite(repository, package_only=False):
     source = git("rev-parse", "HEAD")
     if git("status", "--porcelain"):
         raise ValueError("Start from a clean Git checkout; commit or set aside changes first")
+    assets = (repository / Path(release_assets)).resolve() if release_assets is not None else None
+    if assets is not None and assets.exists():
+        raise FileExistsError(f"Choose a new release attachment directory: {assets}")
     parent = repository / "build/suite"
     parent.mkdir(parents=True, exist_ok=True)
     destination = Path(tempfile.mkdtemp(prefix=source[:12] + "-", dir=parent))
@@ -133,6 +137,8 @@ def run_suite(repository, package_only=False):
         report = collect_suite(results / "stale-context/results.jsonl", results / "contract-unit-drift/results.jsonl",
                                results / "duplicate-replay/results.jsonl", results / "event-time-ordering/results.jsonl",
                                destination, source)
+        if assets is not None:
+            prepare_release_assets(destination / "suite.zip", assets, source)
     except Exception:
         (destination / "suite.zip").unlink(missing_ok=True)
         (destination / "suite-report.json").unlink(missing_ok=True)
@@ -146,6 +152,8 @@ def run_suite(repository, package_only=False):
     print(f"Suite: {destination / 'suite.zip'}")
     print(f"Summary: {destination / 'suite-report.json'}")
     print(f"Manifest: {destination / 'manifest.json'}")
+    if assets is not None:
+        print(f"Release attachments: {assets}")
     return destination
 
 
@@ -153,9 +161,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package-only", action="store_true",
                         help="Verify and package existing scenario outputs without executing builds or tests (for CI)")
+    parser.add_argument("--release-assets", type=Path,
+                        help="Also prepare verified release attachments in a new directory, relative to the repository")
     args = parser.parse_args()
     try:
-        run_suite(Path(__file__).resolve().parents[1], package_only=args.package_only)
+        run_suite(Path(__file__).resolve().parents[1], package_only=args.package_only,
+                  release_assets=args.release_assets)
     except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError, zipfile.BadZipFile, RuntimeError) as error:
         detail = error.stderr if isinstance(error, subprocess.CalledProcessError) and error.stderr else str(error)
         parser.exit(1, f"Unable to prepare suite: {detail}\n")

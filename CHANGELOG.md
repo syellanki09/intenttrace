@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Verified release-attachment preparation from an explicitly selected source,
+  including a private checked snapshot, exact ZIP/manifest/report bytes, and
+  `SHA256SUMS`. The suite's optional `--release-assets` flag exports these files;
+  ordinary and cold-cache CI check their hashes and retain review attachments.
+
 - One-command execution of all four demonstrations and 12 cases, with a versioned
   combined suite report, independently verified evidence bundle, offline suite
   verification, and cold-cache CI reproduction.

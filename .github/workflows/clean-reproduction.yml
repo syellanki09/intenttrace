@@ -14,6 +14,8 @@ on:
       - tools/test_suite.py
       - tools/test_run_suite.py
       - tools/test_verify_suite.py
+      - tools/prepare_release_assets.py
+      - tools/test_prepare_release_assets.py
       - docs/scenario-suite.md
       - docs/reference-results.md
   push:
@@ -29,6 +31,8 @@ on:
       - tools/test_suite.py
       - tools/test_run_suite.py
       - tools/test_verify_suite.py
+      - tools/prepare_release_assets.py
+      - tools/test_prepare_release_assets.py
       - docs/scenario-suite.md
       - docs/reference-results.md
 
@@ -65,7 +69,11 @@ jobs:
 
       - name: Prepare the complete scenario suite without restored Gradle caches
         shell: bash
-        run: python3 tools/run_suite.py
+        run: python3 tools/run_suite.py --release-assets build/release-assets
+
+      - name: Verify release attachment checksums
+        working-directory: build/release-assets
+        run: sha256sum --check SHA256SUMS
 
       - name: Retain verified reproduction evidence
         uses: actions/upload-artifact@v4
@@ -75,6 +83,7 @@ jobs:
             build/suite/**/suite.zip
             build/suite/**/suite-report.json
             build/suite/**/manifest.json
+            build/release-assets/*
             ${{ runner.temp }}/intenttrace-reproduction/source-commit.txt
           if-no-files-found: error
           retention-days: 30

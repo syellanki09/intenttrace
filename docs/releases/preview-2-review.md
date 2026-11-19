@@ -1,0 +1,106 @@
+# Preview 2 Candidate Review
+
+This checklist prepares `v0.1.0-preview.2` for a maintainer decision. It does not
+authorize a tag, release, archival deposit, or external outreach.
+
+## Verified Implementation Baseline
+
+- Main implementation commit: `5a09a824e97d79b8b1bf13c96b7ae2abf4b1b075`.
+- [Implementation PR](https://github.com/syellanki09/intenttrace/pull/31).
+- [Baseline CI](https://github.com/syellanki09/intenttrace/actions/runs/44032733755)
+  and [cold-cache reproduction](https://github.com/syellanki09/intenttrace/actions/runs/44032733778)
+  succeeded for that commit.
+- Baseline checks do not validate later metadata or documentation commits.
+
+## Settle Metadata Before Final Validation
+
+- [ ] Review the [draft release notes](v0.1.0-preview.2.md) against current main.
+- [ ] Confirm the final version with the maintainer.
+- [ ] Set the Gradle version, citation version, release URL, and actual publication
+  date together in a reviewed metadata change. Preserve author and license.
+- [ ] Move the appropriate Unreleased changelog entries to the confirmed version
+  and date. Preserve the historical preview-1 description.
+- [ ] Do not reuse preview-1's date, fabricate a future date, or add an unconfirmed
+  DOI, ORCID, archival identifier, adoption claim, or external-validation claim.
+- [ ] Have the maintainer commit and review those changes before selecting the
+  final release SHA. Keep that SHA distinct from the implementation baseline.
+
+## Validate the Final Source
+
+Use a clean checkout of the final reviewed source with JDK 17 and Python 3.9+:
+
+```bash
+git rev-parse HEAD
+git status --short
+python3 tools/run_suite.py
+```
+
+The command prints the unique output directory. Substitute its actual path below:
+
+```bash
+python3 tools/verify_suite.py /path/to/run/suite.zip
+```
+
+- [ ] Full Kotlin and Python suites pass; record actual test counts from the logs.
+- [ ] Manifest source is the full final SHA and `sourceDirty` is the JSON boolean
+  `false`. All four independent verifiers pass.
+- [ ] Raw record counts are 2, 3, 3, and 4 in the manifest's scenario order.
+- [ ] All expected statuses match the draft notes and all detection values are null.
+- [ ] Run a second reproduction from that same clean source. Compare raw evidence,
+  manifests, and logical results; allow environment metadata and logs to vary.
+- [ ] Ordinary CI and the cold-cache workflow pass for the exact final SHA. Review
+  their artifact manifests and retained logs; record the final run URLs.
+
+## Prepare the Exact Attachments
+
+The full validation command can prepare attachments directly:
+
+```bash
+python3 tools/run_suite.py --release-assets build/release-assets
+```
+
+Ordinary and cold-cache CI use the same export path and check `SHA256SUMS`.
+Use a new directory for another local run. For a suite that was already produced,
+use the standalone command below without rerunning the experiments.
+
+Use the verified suite from the final-source run and require that exact full SHA:
+
+```bash
+python3 tools/prepare_release_assets.py /path/to/run/suite.zip \
+  --source-commit FULL_FINAL_SHA --output /path/to/new/attachments
+```
+
+The tool independently verifies all 12 cases, requires indexed suite report 2,
+checks the source SHA, preserves the original ZIP and its exact manifest/report
+bytes, and generates `SHA256SUMS`. It creates the new attachment directory only
+after validation succeeds and refuses to overwrite an existing directory. It does
+not change Git, assign a software version/date, create a tag, or publish anything.
+
+From the resulting attachment directory, check the actual bytes:
+
+```bash
+shasum -a 256 -c SHA256SUMS
+```
+
+- [ ] Offline suite verification succeeds after copying the attachments.
+- [ ] Source identity agrees across the manifest, suite report, raw evidence,
+  final Git source, and selected CI execution.
+- [ ] Inspect ZIP member names, report schema 2, manifest schema 1, raw record
+  counts, and README instructions. Use the current verifier for indexed suites.
+- [ ] Keep the artifact checksum file with those attachments; do not substitute
+  earlier feature-branch or baseline evidence after the final commit changes.
+- [ ] Preserve the reviewed evidence outside temporary CI retention. Retention of
+  30 days is not permanent archival storage.
+
+## Maintainer Publication Decision
+
+- [ ] Obtain explicit authorization for tagging and publication.
+- [ ] Tag the exact final verified SHA; never move an already published tag.
+- [ ] Publish the approved notes and exact verified attachments as a prerelease.
+- [ ] Verify the public tag, metadata, attachment hashes, and offline suite check.
+- [ ] Consider archival work and independent human reproduction separately.
+  Record an archival identifier only after a deposit is explicitly authorized
+  and confirmed; do not describe CI as independent external reproduction.
+
+Pending fields intentionally remain unset: final release commit, publication
+date, final validation-run URLs, attachment checksums, and any archival identifier.

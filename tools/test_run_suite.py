@@ -29,9 +29,27 @@ class SuiteExecutionTest(unittest.TestCase):
                 shutil.copyfile(source, target)
             with patch("run_suite.subprocess.check_output", side_effect=["a" * 40, "", "a" * 40, ""]), \
                  patch("run_suite.run_logged") as execute:
-                destination = run_suite(directory, package_only=True)
+                destination = run_suite(directory, package_only=True, release_assets=Path("build/release-assets"))
                 execute.assert_not_called()
             self.assertEqual(2, verify_suite(destination / "suite.zip")["suiteReportVersion"])
+            assets = Path(directory) / "build/release-assets"
+            self.assertEqual({"suite.zip", "suite-report.json", "manifest.json", "SHA256SUMS"},
+                             {path.name for path in assets.iterdir()})
+            self.assertEqual((destination / "suite.zip").read_bytes(), (assets / "suite.zip").read_bytes())
+            self.assertEqual("a" * 40, verify_suite(assets / "suite.zip")["sourceCommitSha"])
+
+    def test_existing_release_assets_are_rejected_before_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            assets = Path(directory) / "build/release-assets"
+            assets.mkdir(parents=True)
+            marker = assets / "keep.txt"
+            marker.write_text("previous evidence", encoding="utf-8")
+            with patch("run_suite.subprocess.check_output", side_effect=["a" * 40, ""]), \
+                 patch("run_suite.run_logged") as execute:
+                with self.assertRaises(FileExistsError):
+                    run_suite(directory, release_assets=Path("build/release-assets"))
+                execute.assert_not_called()
+            self.assertEqual("previous evidence", marker.read_text())
 
     def test_identical_evidence_produces_identical_manifest_and_archive(self):
         fixture = fixtures.SuiteTest()
