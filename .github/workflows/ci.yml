@@ -89,7 +89,19 @@ jobs:
           retention-days: 30
 
       - name: Package and independently verify the complete suite
-        run: python3 tools/run_suite.py --package-only
+        run: python3 tools/run_suite.py --package-only --release-assets build/release-assets
+
+      - name: Verify release attachment checksums
+        working-directory: build/release-assets
+        run: sha256sum --check SHA256SUMS
+
+      - name: Retain release review attachments
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-release-assets-${{ github.sha }}
+          path: build/release-assets/*
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Retain complete suite evidence
         uses: actions/upload-artifact@v4
