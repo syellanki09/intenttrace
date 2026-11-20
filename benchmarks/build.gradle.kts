@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(project(":provenance"))
     implementation(project(":injectors"))
+    implementation(project(":detector"))
 }
 
 application {
@@ -45,6 +46,17 @@ tasks.register<JavaExec>("runContractScenario") {
     description = "Run the synthetic cross-client duration contract demonstration"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("io.intenttrace.benchmarks.ContractUnitDriftMain")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}
+
+tasks.register<JavaExec>("runDetectorAgreement") {
+    workingDir(rootProject.projectDir)
+    group = "application"
+    description = "Compare runtime detector findings with harness ground truth on the synthetic fixtures"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.intenttrace.benchmarks.DetectorAgreementMain")
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion.set(JavaLanguageVersion.of(17))
     })

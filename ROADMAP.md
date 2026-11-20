@@ -65,6 +65,17 @@ hashes, and verification status; ordinary and cold-cache CI verify suite archive
 - Additional scenarios proposed or reproduced by external users
 - Visualization/reporting improvements driven by real usability needs
 
+## Milestone 6 - Runtime detection
+
+In progress: an experimental [runtime detector](docs/detector.md) and
+OpenTelemetry publishing, with agreement against fixture ground truth.
+
+- Detector checks usable inside host systems without the harness
+- OpenTelemetry metrics and span events for findings
+- Measured precision, recall and overhead on realistic infrastructure
+- Contract-compatibility runtime checks
+- Durable or distributed replay and event-time tracking
+
 ## Release policy
 
 - Prefer small, reproducible releases over feature-count milestones.
