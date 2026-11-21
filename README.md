@@ -98,7 +98,9 @@ pipeline/              clean-room reference personalization pipeline
 injectors/             one fault injector per failure class
 evaluation/            independent invariant evaluation and detection observations
 provenance/            structured decision evidence and JSON serialization
-benchmarks/            executable stale-context scenario and JSONL output
+benchmarks/            executable scenarios, JSONL output and detector agreement
+detector/              runtime detector for host systems (no dependencies)
+detector-otel/         OpenTelemetry metrics and span events for detector findings
 ```
 
 ## Status
@@ -145,6 +147,16 @@ event arriving after the decision. Run
 `python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl`.
 The expected statuses are SATISFIED, VIOLATED, SATISFIED, VIOLATED. Event,
 ingestion, and decision timestamps explain each result; detection remains null.
+
+## Runtime Detector
+
+The [runtime detector](docs/detector.md) is the part a host system runs itself.
+It checks decisions and event streams for stale, missing, delayed, duplicated and
+conflicting information from evidence the host already has, and publishes findings
+as OpenTelemetry metrics and span events. Run
+`./gradlew :benchmarks:runDetectorAgreement --no-daemon` to compare its findings
+with harness ground truth on the synthetic fixtures. It is experimental and
+unreleased; agreement on fixed fixtures is not a measure of production accuracy.
 
 ## Release Preparation
 
