@@ -5,11 +5,14 @@ authorize a tag, release, archival deposit, or external outreach.
 
 ## Verified Implementation Baseline
 
-- Main implementation commit: `5a09a824e97d79b8b1bf13c96b7ae2abf4b1b075`.
-- [Implementation PR](https://github.com/syellanki09/intenttrace/pull/31).
-- [Baseline CI](https://github.com/syellanki09/intenttrace/actions/runs/44032733755)
-  and [cold-cache reproduction](https://github.com/syellanki09/intenttrace/actions/runs/44032733778)
-  succeeded for that commit.
+- Main implementation commit: `3ab594aafb3d6e0a5280cb6e24104e519c924ac2`
+  (detector library, [PR 33](https://github.com/syellanki09/intenttrace/pull/33)),
+  on top of `5a09a824e97d79b8b1bf13c96b7ae2abf4b1b075`
+  ([PR 31](https://github.com/syellanki09/intenttrace/pull/31)).
+- [Baseline CI](https://github.com/syellanki09/intenttrace/actions/runs/45051554399)
+  succeeded for `3ab594a`. The cold-cache reproduction last ran for `5a09a82`
+  ([run](https://github.com/syellanki09/intenttrace/actions/runs/44032733778));
+  rerun it for the final SHA.
 - Baseline checks do not validate later metadata or documentation commits.
 
 ## Settle Metadata Before Final Validation
@@ -22,6 +25,8 @@ authorize a tag, release, archival deposit, or external outreach.
   and date. Preserve the historical preview-1 description.
 - [ ] Do not reuse preview-1's date, fabricate a future date, or add an unconfirmed
   DOI, ORCID, archival identifier, adoption claim, or external-validation claim.
+- [ ] Use `python3 tools/release_metadata.py set --version VERSION --date YYYY-MM-DD`
+  to make those changes together, then `python3 tools/release_metadata.py check`.
 - [ ] Have the maintainer commit and review those changes before selecting the
   final release SHA. Keep that SHA distinct from the implementation baseline.
 
@@ -91,6 +96,28 @@ shasum -a 256 -c SHA256SUMS
   earlier feature-branch or baseline evidence after the final commit changes.
 - [ ] Preserve the reviewed evidence outside temporary CI retention. Retention of
   30 days is not permanent archival storage.
+
+## Library Artifacts
+
+One-time account, key and secret setup is in [maintainer setup](maintainer-setup.md).
+
+- [ ] Run **Release artifacts** for the tag with upload off. It refuses a tag
+  whose metadata disagrees, reruns the full suite, signs the artifacts, verifies
+  every signature, and builds the outside consumer example from them.
+- [ ] Inspect the retained bundle: two artifacts, each with jar, sources, javadoc,
+  POM, and `.asc`, `.md5` and `.sha1` files; coordinates under
+  `io.github.syellanki09` and the release version.
+- [ ] With authorization, rerun with upload on and review the Central Portal
+  deployment before pressing Publish. Maven Central publication is permanent.
+- [ ] After publication, build `examples/detector-consumer` with no extra
+  repository to confirm the public coordinates resolve.
+
+## Archival
+
+- [ ] Zenodo's GitHub integration is switched on for the repository before the
+  GitHub release is published.
+- [ ] After the deposit appears, record its DOI with
+  `python3 tools/release_metadata.py doi DOI` in a reviewed change. Do not retag.
 
 ## Maintainer Publication Decision
 

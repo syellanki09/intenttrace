@@ -1,6 +1,8 @@
 plugins {
-    id("intenttrace.kotlin-conventions")
+    id("intenttrace.published-library")
 }
+
+description = "Publishes IntentTrace detector findings as OpenTelemetry metrics and span events."
 
 dependencies {
     api(project(":detector"))

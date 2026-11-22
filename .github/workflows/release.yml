@@ -1,0 +1,129 @@
+name: Release artifacts
+
+# Builds, validates and signs the library artifacts for one existing release
+# tag. It never creates or moves a tag. With "upload" on, it sends the bundle to
+# the Maven Central Portal as a deployment that stays unpublished until a
+# maintainer reviews it there and presses Publish.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, for example v0.1.0-preview.2
+        required: true
+        type: string
+      upload:
+        description: Upload the signed bundle to the Central Portal for review (not published until approved there)
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and validate release artifacts
+    runs-on: ubuntu-latest
+    environment: maven-central
+
+    steps:
+      - name: Check the tag name
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "::error::Not a release tag: $TAG"; exit 1; }
+
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Confirm the exact release source and metadata
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$TAG^{commit}")"
+          test -z "$(git status --porcelain)"
+          python3 tools/release_metadata.py check --tag "$TAG"
+          echo "Release source: $(git rev-parse HEAD)"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Run and verify the complete suite at the release commit
+        run: python3 tools/run_suite.py --release-assets build/release-assets
+
+      - name: Verify release attachment checksums
+        working-directory: build/release-assets
+        run: sha256sum --check SHA256SUMS
+
+      - name: Build signed library artifacts
+        env:
+          INTENTTRACE_SIGNING_KEY: ${{ secrets.INTENTTRACE_SIGNING_KEY }}
+          INTENTTRACE_SIGNING_PASSWORD: ${{ secrets.INTENTTRACE_SIGNING_PASSWORD }}
+        run: |
+          test -n "$INTENTTRACE_SIGNING_KEY" || { echo "::error::The INTENTTRACE_SIGNING_KEY secret is not set"; exit 1; }
+          rm -rf build/central-staging
+          ./gradlew publishAllPublicationsToCentralStagingRepository --no-daemon
+
+      - name: Verify every signature
+        env:
+          INTENTTRACE_SIGNING_KEY: ${{ secrets.INTENTTRACE_SIGNING_KEY }}
+          INTENTTRACE_SIGNING_PASSWORD: ${{ secrets.INTENTTRACE_SIGNING_PASSWORD }}
+        run: |
+          export GNUPGHOME="$(mktemp -d)"
+          printf '%s' "$INTENTTRACE_SIGNING_KEY" | gpg --batch --import
+          find build/central-staging -name '*.asc' -print0 | while IFS= read -r -d '' signature; do
+            gpg --batch --verify "$signature" "${signature%.asc}"
+          done
+          rm -rf "$GNUPGHOME"
+
+      - name: Build and test the outside consumer example from these artifacts
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          ./gradlew -p examples/detector-consumer test run --no-daemon \
+            -PintenttraceRepository="$PWD/build/central-staging" -PintenttraceVersion="${TAG#v}"
+
+      - name: Package the Central Portal bundle
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 tools/build_central_bundle.py build/central-staging \
+            --namespace io.github.syellanki09 --version "${TAG#v}" \
+            --output "build/central-bundle/intenttrace-${TAG#v}.zip"
+          sha256sum build/central-bundle/*.zip
+
+      - name: Retain release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ inputs.tag }}
+          path: |
+            build/central-bundle/*.zip
+            build/release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload the bundle to the Central Portal for review
+        if: ${{ inputs.upload }}
+        env:
+          TAG: ${{ inputs.tag }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+        run: |
+          test -n "$CENTRAL_USERNAME" && test -n "$CENTRAL_PASSWORD" || { echo "::error::Central Portal token secrets are not set"; exit 1; }
+          token="$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w0)"
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $token" \
+            --form "bundle=@build/central-bundle/intenttrace-${TAG#v}.zip" \
+            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED&name=intenttrace-${TAG#v}"
+          echo
+          echo "Uploaded. Review and publish the deployment at https://central.sonatype.com/publishing/deployments"

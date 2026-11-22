@@ -157,10 +157,12 @@ as OpenTelemetry metrics and span events. Run
 `./gradlew :benchmarks:runDetectorAgreement --no-daemon` to compare its findings
 with harness ground truth on the synthetic fixtures. It is experimental and
 unreleased; agreement on fixed fixtures is not a measure of production accuracy.
+The [consumer example](examples/detector-consumer/README.md) shows a service
+using the detector from its library artifacts, outside this build.
 
 ## Release Preparation
 
-Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). No archival DOI is established.
+Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). To cite the software, use [CITATION.cff](CITATION.cff); no archival DOI is established yet. Maintainers publishing a release follow [maintainer setup](docs/releases/maintainer-setup.md).
 
 ## Related work
 
