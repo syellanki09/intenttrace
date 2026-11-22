@@ -15,9 +15,28 @@ enum class DeliveryVerdict {
     SKIP_CONFLICT
 }
 
-data class DeliveryResult(val verdict: DeliveryVerdict, val finding: Finding?) {
+/**
+ * The outcome of one delivery. When the verdict is [DeliveryVerdict.APPLY],
+ * [attempt] identifies this delivery so that a failure to apply it can be
+ * reported with [ReplayGuard.onApplicationFailed].
+ */
+data class DeliveryResult(
+    val verdict: DeliveryVerdict,
+    val finding: Finding?,
+    val attempt: DeliveryAttempt? = null
+) {
     val shouldApply: Boolean
         get() = verdict == DeliveryVerdict.APPLY
+}
+
+/** One recorded delivery attempt. Opaque to hosts; it only identifies the attempt. */
+class DeliveryAttempt internal constructor(
+    val contextKey: String,
+    val eventId: String,
+    internal val owner: Any,
+    internal val sequence: Long
+) {
+    override fun toString(): String = "DeliveryAttempt(contextKey=$contextKey, eventId=$eventId, sequence=$sequence)"
 }
 
 /**
@@ -28,8 +47,11 @@ data class DeliveryResult(val verdict: DeliveryVerdict, val finding: Finding?) {
  * (idempotent processing) or only record the finding (observation mode).
  *
  * An identity is recorded when the guard returns [DeliveryVerdict.APPLY]. If
- * the host then fails to apply that delivery, it calls [onApplicationFailed]
- * so the retry is applied instead of being skipped as a duplicate.
+ * the host then fails to apply that delivery, it passes the result to
+ * [onApplicationFailed] so the retry is applied instead of being skipped as a
+ * duplicate. The result names the specific attempt, so a late failure report
+ * from an attempt that already expired or was evicted cannot release a newer
+ * delivery of the same identity.
  *
  * Retention is measured from each identity's own delivery time, so deliveries
  * whose timestamps are out of order (for example from concurrent callers)
@@ -44,7 +66,7 @@ class ReplayGuard(
     private val maxTrackedIdentities: Int = 100_000
 ) {
     private data class Identity(val contextKey: String, val eventId: String)
-    private class Seen(val fingerprint: String, val firstDeliveredAt: Instant, var deliveries: Int)
+    private class Seen(val fingerprint: String, val firstDeliveredAt: Instant, val attemptSequence: Long, var deliveries: Int)
     private class Expiry(val identity: Identity, val entry: Seen)
 
     /** Insertion order, used for capacity eviction. */
@@ -53,6 +75,7 @@ class ReplayGuard(
     /** Delivery-time order, used for retention. Stale entries are skipped when polled. */
     private val expiries = PriorityQueue<Expiry>(compareBy { it.entry.firstDeliveredAt })
     private var evicted = 0L
+    private var lastAttemptSequence = 0L
 
     init {
         require(!retention.isNegative && !retention.isZero) { "Retention must be positive" }
@@ -78,7 +101,7 @@ class ReplayGuard(
         val identity = Identity(contextKey, eventId)
         val previous = seen[identity]
         if (previous == null) {
-            val entry = Seen(payloadFingerprint, deliveredAt, 1)
+            val entry = Seen(payloadFingerprint, deliveredAt, ++lastAttemptSequence, 1)
             seen[identity] = entry
             expiries.add(Expiry(identity, entry))
             while (seen.size > maxTrackedIdentities) {
@@ -86,7 +109,8 @@ class ReplayGuard(
                 evicted++
             }
             compactExpiries()
-            return DeliveryResult(DeliveryVerdict.APPLY, null)
+            return DeliveryResult(DeliveryVerdict.APPLY, null,
+                DeliveryAttempt(contextKey, eventId, this, entry.attemptSequence))
         }
         previous.deliveries++
         val common = mapOf(
@@ -113,20 +137,24 @@ class ReplayGuard(
     }
 
     /**
-     * Call when the host could not apply a delivery that was returned as
-     * [DeliveryVerdict.APPLY]. The identity is forgotten, so the next delivery
-     * of it is applied. Returns false, and changes nothing, when the identity is
-     * not tracked or was recorded with a different payload.
+     * Call with the result of [onDelivery] when the host could not apply that
+     * delivery. The identity is forgotten, so the next delivery of it is
+     * applied. Returns false, and changes nothing, when the result carries no
+     * attempt (it was not an [DeliveryVerdict.APPLY]), came from another guard,
+     * was already released, or no longer matches the tracked delivery because
+     * that attempt expired or was evicted and a newer one was recorded.
      *
      * A duplicate that arrived while the failed application was in flight was
      * already reported and skipped; the retry after this call is what recovers
      * the event.
      */
     @Synchronized
-    fun onApplicationFailed(contextKey: String, eventId: String, payloadFingerprint: String): Boolean {
-        val identity = Identity(contextKey, eventId)
+    fun onApplicationFailed(delivery: DeliveryResult): Boolean {
+        val attempt = delivery.attempt ?: return false
+        if (attempt.owner !== this) return false
+        val identity = Identity(attempt.contextKey, attempt.eventId)
         val entry = seen[identity] ?: return false
-        if (entry.fingerprint != payloadFingerprint) return false
+        if (entry.attemptSequence != attempt.sequence) return false
         seen.remove(identity)
         compactExpiries()
         return true

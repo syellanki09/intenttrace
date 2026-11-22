@@ -61,21 +61,42 @@ class ReplayGuardTest {
 
     @Test fun `a delivery whose application failed is applied again on retry`() {
         val guard = ReplayGuard(Duration.ofMinutes(5))
-        assertTrue(guard.onDelivery("user-1", "a", "sha:3", start).shouldApply)
-        assertTrue(guard.onApplicationFailed("user-1", "a", "sha:3"))
+        val first = guard.onDelivery("user-1", "a", "sha:3", start)
+        assertTrue(first.shouldApply)
+        assertTrue(guard.onApplicationFailed(first))
         val retry = guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(1))
         assertEquals(DeliveryVerdict.APPLY, retry.verdict)
         assertNull(retry.finding)
         assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(2)).verdict)
     }
 
-    @Test fun `a failed application only releases the payload that was recorded`() {
+    @Test fun `a failure report only releases the attempt it names`() {
         val guard = ReplayGuard(Duration.ofMinutes(5))
-        guard.onDelivery("user-1", "a", "sha:3", start)
-        assertFalse(guard.onApplicationFailed("user-1", "a", "sha:9"))
-        assertFalse(guard.onApplicationFailed("user-1", "unknown", "sha:3"))
-        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(1)).verdict)
+        val first = guard.onDelivery("user-1", "a", "sha:3", start)
+        val duplicate = guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(1))
+        assertNull(duplicate.attempt)
+        assertFalse(guard.onApplicationFailed(duplicate), "a skipped delivery has no attempt to release")
+        assertFalse(ReplayGuard(Duration.ofMinutes(5)).onApplicationFailed(first), "attempt from another guard")
         assertEquals(1, guard.trackedIdentities)
+        assertTrue(guard.onApplicationFailed(first))
+        assertFalse(guard.onApplicationFailed(first), "already released")
+    }
+
+    @Test fun `a late failure from an expired attempt does not release a newer successful delivery`() {
+        val guard = ReplayGuard(Duration.ofSeconds(10))
+        val older = guard.onDelivery("user-1", "a", "sha", start)
+        assertTrue(guard.onDelivery("user-1", "a", "sha", start.plusSeconds(11)).shouldApply, "older attempt expired")
+        assertFalse(guard.onApplicationFailed(older), "late failure of the expired attempt")
+        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha", start.plusSeconds(12)).verdict)
+    }
+
+    @Test fun `a late failure from an evicted attempt does not release a newer successful delivery`() {
+        val guard = ReplayGuard(Duration.ofHours(1), maxTrackedIdentities = 1)
+        val older = guard.onDelivery("user-1", "a", "sha", start)
+        guard.onDelivery("user-1", "b", "sha", start.plusSeconds(1))
+        assertTrue(guard.onDelivery("user-1", "a", "sha", start.plusSeconds(2)).shouldApply, "older attempt evicted")
+        assertFalse(guard.onApplicationFailed(older), "late failure of the evicted attempt")
+        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha", start.plusSeconds(3)).verdict)
     }
 
     @Test fun `retention expires identities whose deliveries arrived out of timestamp order`() {

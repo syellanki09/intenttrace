@@ -63,8 +63,9 @@ class IntentTraceDetectorTest {
     @Test fun `a failed application lets the retry through`() {
         val sink = CollectingFindingSink()
         val detector = IntentTraceDetector(listOf(sink), replay = ReplayGuard(Duration.ofMinutes(5)), clock = clock)
-        assertTrue(detector.onDelivery("user-1", "a", "sha", start).shouldApply)
-        assertTrue(detector.onApplicationFailed("user-1", "a", "sha"))
+        val first = detector.onDelivery("user-1", "a", "sha", start)
+        assertTrue(first.shouldApply)
+        assertTrue(detector.onApplicationFailed(first))
         assertTrue(detector.onDelivery("user-1", "a", "sha", start.plusSeconds(1)).shouldApply)
         assertTrue(sink.findings().isEmpty())
     }
@@ -73,7 +74,7 @@ class IntentTraceDetectorTest {
         assertFailsWith<IllegalArgumentException> { IntentTraceDetector(emptyList()) }
         val detector = IntentTraceDetector(emptyList(), eventTime = EventTimeMonitor())
         assertFailsWith<IllegalStateException> { detector.onDelivery("k", "e", "f") }
-        assertFailsWith<IllegalStateException> { detector.onApplicationFailed("k", "e", "f") }
+        assertFailsWith<IllegalStateException> { detector.onApplicationFailed(DeliveryResult(DeliveryVerdict.APPLY, null)) }
         assertTrue(detector.checkDecision(ContextRead("d", "k", start, null)).isEmpty())
     }
 }

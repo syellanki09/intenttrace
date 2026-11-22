@@ -41,7 +41,7 @@ if (delivery.shouldApply) {
     try {
         state.apply(event)
     } catch (e: Exception) {
-        detector.onApplicationFailed(userId, event.id, event.payloadSha256) // so the retry is applied
+        detector.onApplicationFailed(delivery) // so the retry is applied
         throw e
     }
     detector.onApplied(userId, event.id, event.occurredAt)
@@ -98,8 +98,9 @@ unchanged, and agreement is reported separately.
   produce disagreement findings.
 - Versions must be positive and increase with every commit.
 - `ReplayGuard` records an identity when it returns `APPLY`. A host that fails
-  to apply that delivery must call `onApplicationFailed`, or the retry is
-  skipped as a duplicate. Retention is measured from each identity's own
+  to apply that delivery must pass its result to `onApplicationFailed`, or the
+  retry is skipped as a duplicate. The result names that one attempt, so a late
+  failure from an attempt that already expired or was evicted is ignored. Retention is measured from each identity's own
   delivery time, so out-of-order timestamps still expire on time.
 - `ReplayGuard` forgets identities after `retention` or beyond
   `maxTrackedIdentities`. Replays after eviction are not detected;
