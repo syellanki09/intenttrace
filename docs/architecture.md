@@ -65,6 +65,16 @@ Event ID, event time, and ingestion time remain null for this context-only scena
 
 `ProvenanceJson` uses kotlinx.serialization with explicit canonical failure-class IDs, ISO-8601 timestamps, compact single-line JSON, and explicit null/default fields. Detection remains separate from invariant status. The benchmark runner writes these records as JSONL.
 
+### `detector/` and `detector-otel/`
+
+The [runtime detector](detector.md) is used by a host system rather than by the
+harness. It never sees ground truth: freshness relies on a host-supplied oracle,
+replay detection on event identities and payload fingerprints, and event-time
+detection on occurrence, ingestion and decision clocks. `detector-otel` turns
+findings into OpenTelemetry metrics and span events. The benchmarks module
+compares detector findings with harness ground truth without changing existing
+scenario records.
+
 ### `benchmarks/`
 `StaleContextScenario` runs fixed control and injected paths and returns provenance records. The application entry point captures runtime and source metadata, writes two JSONL records, and prints evaluation summaries. Run `./gradlew :benchmarks:run --no-daemon` from the checkout; see the README for output paths and arguments. Tagged reference bundles remain planned.
 

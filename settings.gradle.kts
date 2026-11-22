@@ -13,5 +13,7 @@ include(
     "injectors",
     "evaluation",
     "provenance",
-    "benchmarks"
+    "benchmarks",
+    "detector",
+    "detector-otel"
 )

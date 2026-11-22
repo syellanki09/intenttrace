@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Experimental runtime detector (`detector` module, no dependencies) with
+  oracle-backed and age-based freshness checks, missing-context reporting,
+  bounded duplicate and conflicting-delivery detection, and event-time state
+  regression and late-arrival detection. A `detector-otel` module publishes
+  findings as a bounded-cardinality OpenTelemetry counter and span events, and
+  a JSONL sink writes deterministic records. A detector-agreement runner
+  compares findings with harness ground truth on nine covered fixture cases;
+  existing scenario schemas and `detected = null` values are unchanged.
+
 - Verified release-attachment preparation from an explicitly selected source,
   including a private checked snapshot, exact ZIP/manifest/report bytes, and
   `SHA256SUMS`. The suite's optional `--release-assets` flag exports these files;

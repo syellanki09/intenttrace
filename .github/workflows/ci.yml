@@ -66,6 +66,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Compare detector findings with fixture ground truth
+        run: ./gradlew :benchmarks:runDetectorAgreement --no-daemon
+
       - name: Package reproduction evidence
         run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
 
