@@ -61,6 +61,15 @@ class IntentTraceDetector(
         return result
     }
 
+    /**
+     * Tells the replay guard that a delivery returned as applicable could not be
+     * applied, so its retry is applied rather than skipped as a duplicate.
+     */
+    fun onApplicationFailed(contextKey: String, eventId: String, payloadFingerprint: String): Boolean {
+        val guard = checkNotNull(replay) { "Replay detection is not configured" }
+        return guarded(false) { guard.onApplicationFailed(contextKey, eventId, payloadFingerprint) }
+    }
+
     /** Records an event arrival with its occurrence time. */
     fun onArrival(contextKey: String, eventId: String, occurredAt: Instant,
                   ingestedAt: Instant = clock.instant()): List<Finding> {

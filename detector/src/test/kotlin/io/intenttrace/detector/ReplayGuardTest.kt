@@ -5,6 +5,7 @@ import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -56,6 +57,43 @@ class ReplayGuardTest {
         assertEquals(1, bySize.evictedIdentities)
         assertTrue(bySize.onDelivery("user-1", "a", "sha", start).shouldApply)
         assertEquals(DeliveryVerdict.SKIP_DUPLICATE, bySize.onDelivery("user-1", "c", "sha", start).verdict)
+    }
+
+    @Test fun `a delivery whose application failed is applied again on retry`() {
+        val guard = ReplayGuard(Duration.ofMinutes(5))
+        assertTrue(guard.onDelivery("user-1", "a", "sha:3", start).shouldApply)
+        assertTrue(guard.onApplicationFailed("user-1", "a", "sha:3"))
+        val retry = guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(1))
+        assertEquals(DeliveryVerdict.APPLY, retry.verdict)
+        assertNull(retry.finding)
+        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(2)).verdict)
+    }
+
+    @Test fun `a failed application only releases the payload that was recorded`() {
+        val guard = ReplayGuard(Duration.ofMinutes(5))
+        guard.onDelivery("user-1", "a", "sha:3", start)
+        assertFalse(guard.onApplicationFailed("user-1", "a", "sha:9"))
+        assertFalse(guard.onApplicationFailed("user-1", "unknown", "sha:3"))
+        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha:3", start.plusSeconds(1)).verdict)
+        assertEquals(1, guard.trackedIdentities)
+    }
+
+    @Test fun `retention expires identities whose deliveries arrived out of timestamp order`() {
+        val guard = ReplayGuard(Duration.ofSeconds(10))
+        guard.onDelivery("user-1", "a", "sha", start.plusSeconds(10))
+        guard.onDelivery("user-1", "b", "sha", start.plusSeconds(9))
+        val late = guard.onDelivery("user-1", "b", "sha", start.plusMillis(19_500))
+        assertEquals(DeliveryVerdict.APPLY, late.verdict, "b was first delivered 10.5 seconds earlier")
+        assertEquals(DeliveryVerdict.SKIP_DUPLICATE, guard.onDelivery("user-1", "a", "sha", start.plusMillis(19_600)).verdict)
+        assertEquals(1, guard.evictedIdentities)
+    }
+
+    @Test fun `time-based expiry still works after many out-of-order deliveries`() {
+        val guard = ReplayGuard(Duration.ofSeconds(10), maxTrackedIdentities = 4)
+        (0 until 40).forEach { guard.onDelivery("user-1", "e$it", "sha", start.plusSeconds((it % 7).toLong())) }
+        assertEquals(4, guard.trackedIdentities)
+        guard.onDelivery("user-1", "fresh", "sha", start.plusSeconds(60))
+        assertEquals(1, guard.trackedIdentities)
     }
 
     @Test fun `invalid configuration and blank identities are rejected`() {

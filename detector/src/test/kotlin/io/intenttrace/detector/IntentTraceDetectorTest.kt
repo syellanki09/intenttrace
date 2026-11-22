@@ -60,10 +60,20 @@ class IntentTraceDetectorTest {
         assertEquals(findings, sink.findings())
     }
 
+    @Test fun `a failed application lets the retry through`() {
+        val sink = CollectingFindingSink()
+        val detector = IntentTraceDetector(listOf(sink), replay = ReplayGuard(Duration.ofMinutes(5)), clock = clock)
+        assertTrue(detector.onDelivery("user-1", "a", "sha", start).shouldApply)
+        assertTrue(detector.onApplicationFailed("user-1", "a", "sha"))
+        assertTrue(detector.onDelivery("user-1", "a", "sha", start.plusSeconds(1)).shouldApply)
+        assertTrue(sink.findings().isEmpty())
+    }
+
     @Test fun `unconfigured checks are explicit errors`() {
         assertFailsWith<IllegalArgumentException> { IntentTraceDetector(emptyList()) }
         val detector = IntentTraceDetector(emptyList(), eventTime = EventTimeMonitor())
         assertFailsWith<IllegalStateException> { detector.onDelivery("k", "e", "f") }
+        assertFailsWith<IllegalStateException> { detector.onApplicationFailed("k", "e", "f") }
         assertTrue(detector.checkDecision(ContextRead("d", "k", start, null)).isEmpty())
     }
 }

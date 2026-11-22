@@ -38,7 +38,12 @@ detector.checkDecision(ContextRead(requestId, userId, now, VersionStamp(read.ver
 val delivery = detector.onDelivery(userId, event.id, event.payloadSha256)
 detector.onArrival(userId, event.id, event.occurredAt)
 if (delivery.shouldApply) {
-    state.apply(event)
+    try {
+        state.apply(event)
+    } catch (e: Exception) {
+        detector.onApplicationFailed(userId, event.id, event.payloadSha256) // so the retry is applied
+        throw e
+    }
     detector.onApplied(userId, event.id, event.occurredAt)
 }
 ```
@@ -92,11 +97,19 @@ unchanged, and agreement is reported separately.
   truth produces false negatives; an oracle that reads uncommitted data can
   produce disagreement findings.
 - Versions must be positive and increase with every commit.
+- `ReplayGuard` records an identity when it returns `APPLY`. A host that fails
+  to apply that delivery must call `onApplicationFailed`, or the retry is
+  skipped as a duplicate. Retention is measured from each identity's own
+  delivery time, so out-of-order timestamps still expire on time.
 - `ReplayGuard` forgets identities after `retention` or beyond
   `maxTrackedIdentities`. Replays after eviction are not detected;
   `evictedIdentities` shows how often that happened.
 - `EventTimeMonitor` assumes comparable clocks and does not correct skew. It
-  keeps a bounded number of keys and recent decisions per key.
+  keeps a bounded number of keys, recent decisions per key and recent arrivals.
+- `EventTimeMonitor` judges a redelivered event by its first ingestion and
+  reports each event and decision pair once, but only while the event is among
+  the `maxTrackedArrivals` most recent arrivals. A redelivery after that can
+  report a late arrival that its first delivery did not have.
 - Timestamps that fall after the decision, from the read or the oracle, are
   reported as suspected `conflicting-values` findings rather than thrown.
 - State is in memory and per process. Durable or distributed tracking is not

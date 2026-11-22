@@ -14,24 +14,44 @@ import java.time.Instant
  *
  * Clocks are assumed to be comparable. Clock skew between producers can make
  * either condition appear or disappear; it is tolerated, never corrected, and
- * never turned into an exception on the host path. Memory is
- * bounded by [maxKeys] and by [maxDecisionsPerKey] recent decisions per key.
+ * never turned into an exception on the host path.
+ *
+ * A redelivered event is judged by its first ingestion, and each pair of event
+ * and decision is reported at most once, while the event is among the
+ * [maxTrackedArrivals] most recent arrivals. Memory is bounded by [maxKeys],
+ * by [maxDecisionsPerKey] recent decisions per key and by [maxTrackedArrivals].
  */
 class EventTimeMonitor(
     private val maxDecisionsPerKey: Int = 64,
-    private val maxKeys: Int = 100_000
+    private val maxKeys: Int = 100_000,
+    private val maxTrackedArrivals: Int = 100_000
 ) {
     private class Applied(val eventId: String, val occurredAt: Instant)
-    private class RecordedDecision(val decisionId: String, val decidedAt: Instant, val reflectedOccurredAt: Instant?)
+    private class RecordedDecision(
+        val decisionId: String,
+        val decidedAt: Instant,
+        val reflectedOccurredAt: Instant?,
+        val sequence: Long
+    )
+    private data class ArrivalKey(val contextKey: String, val eventId: String)
+
+    /** Earliest known ingestion of an event, and the last decision it was already compared with. */
+    private class Arrival(val firstIngestedAt: Instant, val comparedThroughSequence: Long)
     private class KeyState(var applied: Applied? = null, val decisions: ArrayDeque<RecordedDecision> = ArrayDeque())
 
     private val keys = object : LinkedHashMap<String, KeyState>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, KeyState>?): Boolean = size > maxKeys
     }
+    private val arrivals = object : LinkedHashMap<ArrivalKey, Arrival>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ArrivalKey, Arrival>?): Boolean =
+            size > maxTrackedArrivals
+    }
+    private var lastSequence = 0L
 
     init {
         require(maxDecisionsPerKey > 0) { "At least one decision per key must be retained" }
         require(maxKeys > 0) { "At least one key must be tracked" }
+        require(maxTrackedArrivals > 0) { "At least one arrival must be tracked" }
     }
 
     /** Call after the host applied an event to the state for [contextKey]. */
@@ -63,21 +83,29 @@ class EventTimeMonitor(
     fun onDecision(contextKey: String, decisionId: String, decidedAt: Instant, reflectedOccurredAt: Instant?) {
         require(contextKey.isNotBlank() && decisionId.isNotBlank()) { "Context key and decision id must not be blank" }
         val decisions = keys.getOrPut(contextKey) { KeyState() }.decisions
-        decisions.addLast(RecordedDecision(decisionId, decidedAt, reflectedOccurredAt))
+        decisions.addLast(RecordedDecision(decisionId, decidedAt, reflectedOccurredAt, ++lastSequence))
         while (decisions.size > maxDecisionsPerKey) decisions.removeFirst()
     }
 
     /**
-     * Call when an event arrives, before or after applying it. Returns one
-     * finding for each retained decision that the event missed.
+     * Call when an event arrives, before or after applying it, including on
+     * redelivery. Returns one finding for each retained decision that the
+     * event's first ingestion missed and that was not already reported for it.
      */
     @Synchronized
     fun onArrival(contextKey: String, eventId: String, occurredAt: Instant, ingestedAt: Instant,
                   detectedAt: Instant = ingestedAt): List<Finding> {
         require(contextKey.isNotBlank() && eventId.isNotBlank()) { "Context key and event id must not be blank" }
+        val arrivalKey = ArrivalKey(contextKey, eventId)
+        val earlier = arrivals[arrivalKey]
+        val firstIngestedAt = earlier?.firstIngestedAt?.let { minOf(it, ingestedAt) } ?: ingestedAt
+        val comparedThrough = earlier?.comparedThroughSequence ?: 0L
+        arrivals.remove(arrivalKey)
+        arrivals[arrivalKey] = Arrival(firstIngestedAt, lastSequence)
         val decisions = keys[contextKey]?.decisions ?: return emptyList()
         return decisions
-            .filter { !occurredAt.isAfter(it.decidedAt) && ingestedAt.isAfter(it.decidedAt) }
+            .filter { it.sequence > comparedThrough }
+            .filter { !occurredAt.isAfter(it.decidedAt) && firstIngestedAt.isAfter(it.decidedAt) }
             .filter { it.reflectedOccurredAt == null || occurredAt.isAfter(it.reflectedOccurredAt) }
             .map { decision ->
                 Finding(
@@ -86,11 +114,16 @@ class EventTimeMonitor(
                     decisionId = decision.decisionId, eventId = eventId,
                     evidence = mapOf(
                         "occurredAt" to occurredAt.toString(),
-                        "ingestedAt" to ingestedAt.toString(),
+                        "ingestedAt" to firstIngestedAt.toString(),
                         "decidedAt" to decision.decidedAt.toString(),
                         "reflectedOccurredAt" to (decision.reflectedOccurredAt?.toString() ?: "unknown")
                     )
                 )
             }
     }
+
+    /** Number of arrivals currently remembered for redelivery handling. */
+    @get:Synchronized
+    val trackedArrivals: Int
+        get() = arrivals.size
 }

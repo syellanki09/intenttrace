@@ -2,6 +2,7 @@ package io.intenttrace.detector
 
 import java.time.Duration
 import java.time.Instant
+import java.util.PriorityQueue
 
 /** What the host should do with one delivery. */
 enum class DeliveryVerdict {
@@ -26,6 +27,14 @@ data class DeliveryResult(val verdict: DeliveryVerdict, val finding: Finding?) {
  * first delivery, up to [maxTrackedIdentities]. A host may follow the verdict
  * (idempotent processing) or only record the finding (observation mode).
  *
+ * An identity is recorded when the guard returns [DeliveryVerdict.APPLY]. If
+ * the host then fails to apply that delivery, it calls [onApplicationFailed]
+ * so the retry is applied instead of being skipped as a duplicate.
+ *
+ * Retention is measured from each identity's own delivery time, so deliveries
+ * whose timestamps are out of order (for example from concurrent callers)
+ * still expire on time.
+ *
  * Memory is bounded on purpose: once an identity is evicted, a later replay of
  * it is not detected. [evictedIdentities] counts how often that window closed,
  * so a host can tell when to widen it.
@@ -36,8 +45,13 @@ class ReplayGuard(
 ) {
     private data class Identity(val contextKey: String, val eventId: String)
     private class Seen(val fingerprint: String, val firstDeliveredAt: Instant, var deliveries: Int)
+    private class Expiry(val identity: Identity, val entry: Seen)
 
+    /** Insertion order, used for capacity eviction. */
     private val seen = LinkedHashMap<Identity, Seen>()
+
+    /** Delivery-time order, used for retention. Stale entries are skipped when polled. */
+    private val expiries = PriorityQueue<Expiry>(compareBy { it.entry.firstDeliveredAt })
     private var evicted = 0L
 
     init {
@@ -64,11 +78,14 @@ class ReplayGuard(
         val identity = Identity(contextKey, eventId)
         val previous = seen[identity]
         if (previous == null) {
-            seen[identity] = Seen(payloadFingerprint, deliveredAt, 1)
+            val entry = Seen(payloadFingerprint, deliveredAt, 1)
+            seen[identity] = entry
+            expiries.add(Expiry(identity, entry))
             while (seen.size > maxTrackedIdentities) {
                 seen.remove(seen.keys.first())
                 evicted++
             }
+            compactExpiries()
             return DeliveryResult(DeliveryVerdict.APPLY, null)
         }
         previous.deliveries++
@@ -95,6 +112,26 @@ class ReplayGuard(
         }
     }
 
+    /**
+     * Call when the host could not apply a delivery that was returned as
+     * [DeliveryVerdict.APPLY]. The identity is forgotten, so the next delivery
+     * of it is applied. Returns false, and changes nothing, when the identity is
+     * not tracked or was recorded with a different payload.
+     *
+     * A duplicate that arrived while the failed application was in flight was
+     * already reported and skipped; the retry after this call is what recovers
+     * the event.
+     */
+    @Synchronized
+    fun onApplicationFailed(contextKey: String, eventId: String, payloadFingerprint: String): Boolean {
+        val identity = Identity(contextKey, eventId)
+        val entry = seen[identity] ?: return false
+        if (entry.fingerprint != payloadFingerprint) return false
+        seen.remove(identity)
+        compactExpiries()
+        return true
+    }
+
     @get:Synchronized
     val trackedIdentities: Int
         get() = seen.size
@@ -104,13 +141,21 @@ class ReplayGuard(
         get() = evicted
 
     private fun expire(now: Instant) {
-        val iterator = seen.values.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            // Insertion order is first-delivery order, so the scan can stop at the first live entry.
-            if (Duration.between(entry.firstDeliveredAt, now) <= retention) break
-            iterator.remove()
-            evicted++
+        while (true) {
+            val next = expiries.peek() ?: return
+            if (Duration.between(next.entry.firstDeliveredAt, now) <= retention) return
+            expiries.poll()
+            if (seen[next.identity] === next.entry) {
+                seen.remove(next.identity)
+                evicted++
+            }
         }
+    }
+
+    /** Drops queue entries for identities that were already evicted or released. */
+    private fun compactExpiries() {
+        if (expiries.size <= 2 * seen.size + 64) return
+        expiries.clear()
+        seen.forEach { (identity, entry) -> expiries.add(Expiry(identity, entry)) }
     }
 }
