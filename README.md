@@ -4,35 +4,101 @@
 
 An open, nonproprietary reliability and evaluation framework for detecting, reproducing, tracing, and benchmarking **hidden information-integrity failures** in personalization, recommendation, and increasingly AI-enabled distributed systems.
 
-## The problem
+Every service can report healthy while the decision a user sees was made on stale, missing, late, duplicated, conflicting, or misinterpreted information. Such failures leave no crash and no error to measure. IntentTrace provides two things for them, with current coverage shown [below](#failure-classes-and-coverage):
 
-Conventional availability monitoring tells you whether a service is online and responding. It does not tell you whether the *right information* survived the full path from a user's action to the final result.
+- **A benchmark harness** that injects implemented failure scenarios deterministically into a clean-room reference pipeline, judges the outcome against independent ground truth, and packages verifiable evidence.
+- **A runtime detector** that a host service runs itself, reporting supported failure classes from evidence the host already has and publishing findings through OpenTelemetry.
 
-A personalization system can report healthy uptime on every service while the information used by a decision violates one of the six integrity classes defined below. The user sees an irrelevant or inconsistent result. The engineering team sees a system that appears to be working. Failures of this kind are difficult to diagnose precisely because they leave no crash and no error to measure.
+## How it works
 
-IntentTrace targets that class of failure at the system level rather than asking only whether an individual service, database, or model is available.
+```mermaid
+flowchart LR
+    subgraph harness["Benchmark harness: ground truth known"]
+        direction LR
+        G[Synthetic workload] --> P[Reference pipeline]
+        I[Fault injector] --> P
+        P --> D[Decision]
+        P --> R[Provenance record]
+        D --> E[Independent invariant evaluator]
+        R --> E
+        E --> J[Verified JSONL evidence]
+    end
 
-## Scope
+    subgraph host["Host service: ground truth unknown"]
+        direction LR
+        C[Cache or replica read] --> HD[Decision path]
+        S[Event stream] --> HC[Event consumer]
+        HD --> DET[IntentTrace detector]
+        HC --> DET
+        DET --> OT[OpenTelemetry metric and span events]
+        DET --> JL[JSONL findings]
+    end
 
-IntentTrace addresses six failure classes, documented in [`docs/failure-taxonomy.md`](docs/failure-taxonomy.md):
+    J -. ground truth .-> A[Detector agreement]
+    DET -. findings on the same fixtures .-> A
+```
 
-| ID | Class | Short description |
-| --- | --- | --- |
-| `stale-context` | Stale context | Decision made on context that has been superseded |
-| `missing-context` | Missing context | Expected context absent; system proceeds on defaults |
-| `delayed-events` | Delayed events | Eligible context arrives after the decision that needed it |
-| `duplicate-replay` | Duplicate / replayed information | The same logical event is applied more than once or older state is replayed |
-| `conflicting-values` | Conflicting values | Two sources disagree and the system resolves the conflict silently |
-| `contract-incompatibility` | Version / data-contract incompatibility | Producer and consumer disagree on data shape or meaning |
+The evaluator and the detector share no state. The harness knows the truth because it controls every input; the detector sees only what a host would see. The agreement runner compares the two on the same fixtures, so detection is measured rather than assumed.
 
-For each class, the framework aims to provide:
+## Failure classes and coverage
 
-- **Failure injection** — reproduce the condition deterministically against a reference pipeline
-- **Detection measurement** — did the system notice, and where did the information diverge from its expected state?
-- **Diagnostic provenance** — which contextual inputs, versions, and transformations produced the final outcome, so an engineer can reconstruct why an apparently healthy system produced an incorrect result
-- **Reproducible benchmarks** — comparable results across reference architectures
+The six classes are defined in the [failure taxonomy](docs/failure-taxonomy.md).
 
-A second area of focus is the reliability of **software development kits and other shared client components**. Because a shared SDK or data contract can propagate versioning, compatibility, or context-handling problems across many client applications at once, IntentTrace includes repeatable compatibility and context-integrity checks intended to surface such problems before or during deployment, and to compare the same reliability signals across web and mobile clients.
+| Class | What goes wrong | Executable scenario | Runtime check | In agreement run |
+| --- | --- | --- | --- | --- |
+| `stale-context` | Decision uses superseded context | [Stale context](docs/reference-results.md), [event-time ordering](docs/event-time-ordering.md) | `FreshnessCheck`, `EventTimeMonitor` | Yes |
+| `missing-context` | Expected context absent; defaults used | Not yet | `FreshnessCheck` | No |
+| `delayed-events` | Context arrives after the decision that needed it | [Event-time ordering](docs/event-time-ordering.md) | `EventTimeMonitor` | Yes |
+| `duplicate-replay` | The same event is applied more than once | [Duplicate replay](docs/duplicate-replay.md) | `ReplayGuard` | Yes |
+| `conflicting-values` | Sources disagree and the conflict is resolved silently | Not yet | `ReplayGuard`, `FreshnessCheck` | No |
+| `contract-incompatibility` | Producer and consumer disagree on shape or meaning | [Contract unit drift](docs/contract-compatibility.md) | Not yet | No |
+
+The agreement run covers nine fixed synthetic cases, true negatives included, listed in the [detector guide](docs/detector.md). It shows the checks behave as designed; it does not measure production precision or recall.
+
+## Quick start
+
+From a clean Git checkout with JDK 17, Python 3.9+, and network access for dependencies:
+
+```bash
+python3 tools/run_suite.py
+./gradlew :benchmarks:runDetectorAgreement --no-daemon
+```
+
+The first command builds and tests the project, runs all four experiment families, independently verifies their 12 case results, and prints the location of `suite.zip` and a JSON summary under `build/suite/`. The second compares detector findings with ground truth. See the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents, and offline verification.
+
+For the published `v0.1.0-preview.1`, check out that tag and use its five-case `python3 tools/run_preview.py` command.
+
+## Use the detector in a service
+
+```kotlin
+dependencies {
+    implementation("io.github.syellanki09:intenttrace-detector-otel:0.1.0-preview.2")
+}
+```
+
+```kotlin
+val detector = IntentTraceDetector(
+    sinks = listOf(OpenTelemetryFindingSink(openTelemetry)),
+    freshness = FreshnessCheck(oracle = { key, at -> primary.latestVersion(key, at) }),
+    replay = ReplayGuard(retention = Duration.ofHours(1)),
+)
+
+// After reading context from a cache or replica:
+detector.checkDecision(ContextRead(requestId, userId, now, VersionStamp(read.version, read.committedAt)))
+```
+
+These coordinates resolve once preview 2 is published to Maven Central. The [detector guide](docs/detector.md) covers every check, the OpenTelemetry output, and the limits. The [consumer example](examples/detector-consumer/README.md) is a complete service built only from the library artifacts, and CI builds it on every change. The detector is experimental and its API may change.
+
+## Experiments
+
+| Family | Cases | Expected statuses | Run | Verify |
+| --- | --- | --- | --- | --- |
+| [Stale context](docs/reference-results.md) | 2 | SATISFIED, VIOLATED | `./gradlew :benchmarks:run` | `tools/verify_results.py` |
+| [Contract unit drift](docs/contract-compatibility.md) | 3 | SATISFIED, VIOLATED, VIOLATED | `./gradlew :benchmarks:runContractScenario` | `tools/verify_contract_results.py` |
+| [Duplicate replay](docs/duplicate-replay.md) | 3 | SATISFIED, VIOLATED, SATISFIED | `./gradlew :benchmarks:runReplayScenario` | `tools/verify_replay_results.py` |
+| [Event-time ordering](docs/event-time-ordering.md) | 4 | SATISFIED, VIOLATED, SATISFIED, VIOLATED | `./gradlew :benchmarks:runEventTimeScenario` | `tools/verify_event_time_results.py` |
+
+Each verifier takes the JSONL file its run writes under `benchmarks/build/results/`. Every record carries context evidence, the full source commit, whether the tree was dirty, and `detected: null`, because benchmark ground truth is recorded separately from detection. Repeated runs on the same checkout produce identical results. The [consolidated reference results](docs/reference-results.md) give invariants, inputs, comparisons, and limitations, and the [reproduction guide](docs/reproduction.md) covers clean-checkout verification, CI evidence bundles, and offline archive checks.
 
 ## Design constraints
 
@@ -40,136 +106,41 @@ A second area of focus is the reliability of **software development kits and oth
 - **Open technologies.** No dependency on any commercial personalization platform.
 - **Reproducible by others.** Every benchmark scenario is intended to be runnable end to end by an independent reader from a clean checkout.
 
-## Quick Start
+A second focus is **shared SDKs and data contracts**, which can propagate versioning, compatibility, or context-handling problems to many client applications at once. The contract evaluator compares outcomes for the same logical input across producer and consumer.
 
-From a clean Git checkout with JDK 17, Python 3.9+, and network access for dependencies, run all four demonstrations and prepare a verified suite:
-
-```bash
-python3 tools/run_suite.py
-```
-
-This builds and tests the project, independently verifies 12 case results, and
-prints the location of `suite.zip` and a JSON summary under `build/suite/`. See
-the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents,
-offline verification, and feedback. For the published `v0.1.0-preview.1`, check
-out that tag and use its five-case `python3 tools/run_preview.py` command.
-
-## Complete Reliability Suite
-
-`python3 tools/run_suite.py` executes and independently verifies four implemented
-experiment families. Its manifest indexes all four raw JSONL files with hashes,
-record counts, canonical identifiers, and verification status. See the
-[consolidated reference results](docs/reference-results.md) for invariants,
-synthetic inputs, control/failure outcomes, comparisons, commands, and limitations.
-
-To run only the stale-context demonstration:
-
-```bash
-./gradlew :benchmarks:run --no-daemon
-```
-
-The command runs control and injected decisions against the same synthetic history, prints their evaluation statuses, and writes two JSON records to `benchmarks/build/results/stale-context/results.jsonl` (one record per line). Control uses v2 (`technology`, `SATISFIED`); injection uses v1 (`travel`, `VIOLATED`). Both retain `detected: null`: benchmark ground truth is not system detection.
-
-Each record includes context evidence and scenario/runtime metadata. The command reads the full Git commit ID and records whether the working tree is dirty. Repeated executions on the same checkout and runtime produce identical output and replace the existing result file. Runtime and source metadata may differ across environments; the synthetic outcomes remain the same.
-
-```bash
-./gradlew :benchmarks:run --args="--output /tmp/intenttrace-results.jsonl"
-./gradlew :benchmarks:run --args="--config benchmarks/config/stale-context.json"
-./gradlew :benchmarks:run --args="--help"
-./gradlew clean test --no-daemon
-```
-
-For source archives without Git metadata, supply `--source-commit` with the full source commit ID; this is recorded as caller-supplied rather than verified. This remains a synthetic demonstration, not evidence of production reliability.
-
-## Repository Layout
-
-See the [reproduction guide](docs/reproduction.md) for clean-checkout verification, expected evidence, and limitations.
-
-Successful CI runs retain a downloadable reproduction bundle with raw JSONL, a checksum manifest, and reproduction commands for 30 days. See the guide for local packaging and source-identity limitations.
-
-Check a downloaded artifact without extracting it with `python3 tools/verify_bundle.py /path/to/stale-context-bundle.zip`.
-
-Current and planned structure:
+## Repository layout
 
 ```
-docs/                  failure taxonomy, architecture notes, benchmark methodology
-generator/             synthetic context and event workload generation
+docs/                  failure taxonomy, architecture, methodology, per-experiment guides
 pipeline/              clean-room reference personalization pipeline
-injectors/             one fault injector per failure class
+injectors/             deterministic fault injectors
 evaluation/            independent invariant evaluation and detection observations
 provenance/            structured decision evidence and JSON serialization
 benchmarks/            executable scenarios, JSONL output and detector agreement
 detector/              runtime detector for host systems (no dependencies)
 detector-otel/         OpenTelemetry metrics and span events for detector findings
+examples/              outside consumer of the published detector artifacts
+tools/                 independent Python verifiers, suite runner and release tooling
 ```
+
+See the [architecture notes](docs/architecture.md) for each component and the [roadmap](ROADMAP.md) for planned work.
 
 ## Status
 
-Prototype under active development.
+Experimental preview under active development. Four experiment families with 12 cases and the runtime detector are implemented and verified in CI. Executable scenarios for missing context and conflicting values, and a runtime contract check, are not yet implemented. No external adoption or third-party use is claimed.
 
-The repository currently includes the canonical failure taxonomy, reference architecture, benchmark methodology, a versioned context model, and an executable reference decision pipeline with deterministic tests.
+## Releases and citation
 
-The pipeline records both the context version used by a decision and the latest version eligible at the decision boundary, and it explicitly marks fallback decisions caused by missing context as degraded.
+Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md), and maintainers publishing a release follow [maintainer setup](docs/releases/maintainer-setup.md).
 
-The first deterministic stale-context injector, `StaleContextResolver` in the `injectors` module, selects an older eligible context version without modifying stored history. Paired tests show the control decision using the latest eligible version and the injected decision using the pinned older version. `freshnessViolated` records benchmark ground truth, not whether the evaluated system detected the problem.
-
-The `evaluation` module independently compares recorded context versions through `FreshnessInvariant`. Results distinguish `SATISFIED`, `VIOLATED`, and `NOT_APPLICABLE` and retain expected and observed versions. Detection observations are supplied separately; `detected = null` means no observation was supplied. Missing context is not classified as a satisfied freshness invariant.
-
-The next implementation milestones are:
-
-- Release hardening and a tagged reference result bundle
-- Independent reproduction instructions
-
-No external adoption or third-party use is claimed.
-
-The `provenance` module records decision evidence, evaluation results, and reproduction metadata separately from the pipeline. `ProvenanceJson` encodes compact, versioned JSON records with canonical failure-class IDs and explicit null detection observations. The `benchmarks` application runs the paired stale-context scenario and writes these records as JSONL.
-
-## Contract Evaluation
-
-The [cross-client contract evaluator](docs/contract-compatibility.md) compares outcomes for the same logical input. Run `./gradlew :benchmarks:runContractScenario --no-daemon` for a synthetic JSON producer/consumer unit-drift demonstration with versioned provenance in `benchmarks/build/results/contract-unit-drift/results.jsonl`. Check it with `python3 tools/verify_contract_results.py benchmarks/build/results/contract-unit-drift/results.jsonl`. The existing stale-context verifier and ZIP bundle tools remain separate.
-
-## Duplicate Replay
-
-The [duplicate-replay demonstration](docs/duplicate-replay.md) compares normal
-delivery, naive replay, and deduplication by event identity. Run
-`./gradlew :benchmarks:runReplayScenario --no-daemon`, then verify the resulting
-JSONL with `python3 tools/verify_replay_results.py benchmarks/build/results/duplicate-replay/results.jsonl`.
-The expected totals are 8, 11, and 8; only naive replay violates the invariant.
-Detection observations remain null. This scenario runs separately from the
-released five-case preview pack.
-
-## Event Time and Late Arrival
-
-The [event-time demonstration](docs/event-time-ordering.md) compares ordered
-delivery, an older event arriving last, event-time reconciliation, and a newer
-event arriving after the decision. Run
-`./gradlew :benchmarks:runEventTimeScenario --no-daemon`, then
-`python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl`.
-The expected statuses are SATISFIED, VIOLATED, SATISFIED, VIOLATED. Event,
-ingestion, and decision timestamps explain each result; detection remains null.
-
-## Runtime Detector
-
-The [runtime detector](docs/detector.md) is the part a host system runs itself.
-It checks decisions and event streams for stale, missing, delayed, duplicated and
-conflicting information from evidence the host already has, and publishes findings
-as OpenTelemetry metrics and span events. Run
-`./gradlew :benchmarks:runDetectorAgreement --no-daemon` to compare its findings
-with harness ground truth on the synthetic fixtures. It is experimental and
-unreleased; agreement on fixed fixtures is not a measure of production accuracy.
-The [consumer example](examples/detector-consumer/README.md) shows a service
-using the detector from its library artifacts, outside this build.
-
-## Release Preparation
-
-Release validation is tracked in the [preview checklist](docs/release-checklist.md) and [changelog](CHANGELOG.md). Versioned evidence is available with the [experimental preview](https://github.com/syellanki09/intenttrace/releases/tag/v0.1.0-preview.1). To cite the software, use [CITATION.cff](CITATION.cff); no archival DOI is established yet. Maintainers publishing a release follow [maintainer setup](docs/releases/maintainer-setup.md).
+To cite IntentTrace, use [CITATION.cff](CITATION.cff) or GitHub's **Cite this repository** button. No archival DOI is established yet.
 
 ## Related work
 
 The clean-room reproduction artifact accompanying the AISQ 2026 paper *"Operational Reliability Patterns in AI Personalization Serving Infrastructure: Practitioner-Grounded Hypotheses and a Clean-Room Reproduction Study"* is maintained separately at
 [`personalization-serving-reliability-benchmark`](https://github.com/syellanki09/personalization-serving-reliability-benchmark).
 
-That artifact establishes that representative personalization-serving reliability failures can be reproduced and measured outside proprietary systems. IntentTrace is a separate and broader effort: it generalizes that work into a reusable framework for failure classification, injection, tracing, provenance, compatibility testing, and benchmarking.
+That artifact establishes that representative personalization-serving reliability failures can be reproduced and measured outside proprietary systems. IntentTrace is a separate and broader effort: it generalizes that work into a reusable framework for failure classification, injection, tracing, provenance, compatibility testing, runtime detection, and benchmarking.
 
 ## Contributing
 
