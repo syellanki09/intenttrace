@@ -79,7 +79,9 @@ Zenodo copies the release's source archive; review its generated record
    ```
 
    The tool refuses future dates, an existing version, and an empty Unreleased
-   changelog section. It updates Gradle, CITATION.cff and CHANGELOG.md together.
+   changelog section. It updates Gradle, CITATION.cff and CHANGELOG.md together,
+   and removes any DOI recorded for the previous release, since that DOI does
+   not identify the new one.
 2. Merge that change, confirm CI passes on the merge commit, and tag exactly
    that commit: `git tag -a v0.1.0-preview.2 SHA -m "IntentTrace 0.1.0-preview.2"`.
 3. Run **Actions > Release artifacts** with the tag. Leave **upload** off first:

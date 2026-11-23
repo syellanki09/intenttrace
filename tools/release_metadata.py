@@ -71,7 +71,10 @@ def check(root=ROOT, tag=None):
 
 
 def set_release(version, date, root=ROOT, today=None):
-    """Moves Unreleased changelog entries to the version and updates Gradle and CITATION.cff together."""
+    """Moves Unreleased changelog entries to the version and updates Gradle and CITATION.cff together.
+
+    Any DOI recorded for the previous version is removed, because it does not identify the new release.
+    """
     if re.fullmatch(VERSION_PATTERN, version) is None:
         raise ValueError(f"Not a release version: {version}")
     released = datetime.date.fromisoformat(date)
@@ -95,6 +98,9 @@ def set_release(version, date, root=ROOT, today=None):
     citation = CFF_VERSION.sub(f'version: "{version}"', citation)
     citation = CFF_DATE.sub(f'date-released: "{date}"', citation)
     citation = CFF_URL.sub(f'url: "{REPOSITORY}/releases/tag/v{version}"', citation)
+    # A recorded DOI identifies the previous release's archive deposit, so the new
+    # version starts without one until its own deposit is confirmed.
+    citation = re.sub(r'^doi: "[^"]*"\n', "", citation, flags=re.MULTILINE)
     changelog = changelog.replace("\n## Unreleased\n", f"\n## Unreleased\n\n## {version} - {date}\n", 1)
     gradle_path.write_text(gradle, encoding="utf-8")
     citation_path.write_text(citation, encoding="utf-8")

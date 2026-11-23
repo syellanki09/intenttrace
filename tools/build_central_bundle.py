@@ -2,13 +2,16 @@
 
 The build writes signed publications to ``build/central-staging``. This tool
 checks that every published component carries what Maven Central requires
-(POM metadata, sources and Javadoc archives, checksums and, unless explicitly
-waived for a dry run, a detached signature for every file) and that all
+(POM metadata matching its coordinates, sources and Javadoc archives,
+checksums that match each file's contents and, unless explicitly waived for a
+dry run, a detached signature for every file) and that all
 components share one namespace and one non-snapshot version. It then writes a
-deterministic ZIP for upload. Uploading is a separate maintainer step.
+deterministic ZIP for upload. Signatures are verified separately with GnuPG,
+because that needs the public key. Uploading is a separate maintainer step.
 """
 
 import argparse
+import hashlib
 import re
 import sys
 import xml.etree.ElementTree as ElementTree
@@ -19,8 +22,9 @@ POM_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
 REQUIRED_POM_FIELDS = ("name", "description", "url", "licenses/m:license/m:name",
                        "developers/m:developer/m:name", "scm/m:url")
 REQUIRED_CHECKSUMS = (".md5", ".sha1")
+CHECKSUM_ALGORITHMS = {".md5": "md5", ".sha1": "sha1", ".sha256": "sha256", ".sha512": "sha512"}
 SIGNATURE = ".asc"
-SIDECARS = REQUIRED_CHECKSUMS + (".sha256", ".sha512", SIGNATURE)
+SIDECARS = tuple(CHECKSUM_ALGORITHMS) + (SIGNATURE,)
 FIXED_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 
 
@@ -37,6 +41,18 @@ def _primary_files(directory):
 def _pom_text(pom, field):
     node = pom.find("m:" + field, POM_NAMESPACE)
     return node.text.strip() if node is not None and node.text else ""
+
+
+def _check_checksums(primary):
+    """Every checksum sidecar present must match the file's bytes; Gradle writes the bare hex digest."""
+    content = primary.read_bytes()
+    for suffix, algorithm in CHECKSUM_ALGORITHMS.items():
+        sidecar = primary.with_name(primary.name + suffix)
+        if not sidecar.is_file():
+            continue
+        recorded = sidecar.read_text(encoding="ascii", errors="replace").split()
+        if not recorded or recorded[0].lower() != hashlib.new(algorithm, content).hexdigest():
+            raise ValueError(f"{sidecar.name} does not match the contents of {primary.name}")
 
 
 def check_staging(staging, namespace, version=None, require_signatures=True):
@@ -60,7 +76,8 @@ def check_staging(staging, namespace, version=None, require_signatures=True):
             if not (version_dir / (stem + suffix)).is_file():
                 raise ValueError(f"{artifact} {found_version} is missing {stem + suffix}")
         pom = ElementTree.parse(version_dir / f"{stem}.pom").getroot()
-        if _pom_text(pom, "groupId") != namespace or _pom_text(pom, "artifactId") != artifact:
+        if (_pom_text(pom, "groupId"), _pom_text(pom, "artifactId"), _pom_text(pom, "version")) != (
+                namespace, artifact, found_version):
             raise ValueError(f"{stem}.pom does not match its directory coordinates")
         for field in REQUIRED_POM_FIELDS:
             if not _pom_text(pom, field):
@@ -70,6 +87,7 @@ def check_staging(staging, namespace, version=None, require_signatures=True):
             for sidecar in needed:
                 if not primary.with_name(primary.name + sidecar).is_file():
                     raise ValueError(f"{primary.name} is missing {primary.name + sidecar}")
+            _check_checksums(primary)
         components.append((artifact, found_version))
     if not components:
         raise ValueError(f"No components found under namespace {namespace}")

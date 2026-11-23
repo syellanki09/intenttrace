@@ -1,3 +1,4 @@
+import hashlib
 import io
 import tempfile
 import unittest
@@ -39,8 +40,11 @@ class CentralBundleTest(unittest.TestCase):
                  stem + ".module": "{}"}
         for name, content in files.items():
             (folder / name).write_text(content)
-            for sidecar in (".md5", ".sha1", ".sha256") + ((".asc",) if signed else ()):
-                (folder / (name + sidecar)).write_text("x")
+            for algorithm in ("md5", "sha1", "sha256"):
+                digest = hashlib.new(algorithm, content.encode()).hexdigest()
+                (folder / f"{name}.{algorithm}").write_text(digest)
+            if signed:
+                (folder / (name + ".asc")).write_text("signature")
         metadata = folder.parent / "maven-metadata.xml"
         metadata.write_text("<metadata/>")
         (folder.parent / "maven-metadata.xml.md5").write_text("x")
@@ -80,6 +84,32 @@ class CentralBundleTest(unittest.TestCase):
         (folder / "intenttrace-detector-1.0.0-javadoc.jar").write_text("javadoc")
         (folder / "intenttrace-detector-1.0.0.jar.sha1").unlink()
         with self.assertRaisesRegex(ValueError, r"\.sha1"):
+            check_staging(self.staging, NAMESPACE)
+
+    def test_checksums_must_match_the_file_contents(self):
+        folder = self.component("intenttrace-detector")
+        jar = folder / "intenttrace-detector-1.0.0.jar"
+        (folder / "intenttrace-detector-1.0.0.jar.sha1").write_text("0" * 40)
+        with self.assertRaisesRegex(ValueError, r"intenttrace-detector-1\.0\.0\.jar\.sha1 does not match"):
+            check_staging(self.staging, NAMESPACE)
+        (folder / "intenttrace-detector-1.0.0.jar.sha1").write_text(hashlib.sha1(b"jar").hexdigest())
+        check_staging(self.staging, NAMESPACE)
+        jar.write_text("modified after checksums were written")
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            check_staging(self.staging, NAMESPACE)
+
+    def test_optional_checksums_are_also_verified_when_present(self):
+        folder = self.component("intenttrace-detector")
+        (folder / "intenttrace-detector-1.0.0.pom.sha256").write_text("0" * 64)
+        with self.assertRaisesRegex(ValueError, r"\.pom\.sha256 does not match"):
+            check_staging(self.staging, NAMESPACE)
+
+    def test_pom_version_must_match_its_directory_and_the_release(self):
+        self.component("intenttrace-detector", "1.0.0",
+                       pom=POM.replace("<version>{version}</version>", "<version>9.9.9</version>"))
+        with self.assertRaisesRegex(ValueError, "does not match its directory coordinates"):
+            check_staging(self.staging, NAMESPACE, "1.0.0")
+        with self.assertRaisesRegex(ValueError, "does not match its directory coordinates"):
             check_staging(self.staging, NAMESPACE)
 
     def test_incomplete_pom_metadata_fails(self):

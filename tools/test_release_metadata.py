@@ -64,6 +64,14 @@ class ReleaseMetadataTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Not a DOI"):
             set_doi("zenodo-1234567", self.root)
 
+    def test_a_new_version_does_not_inherit_the_previous_release_doi(self):
+        set_doi("10.5281/zenodo.1111111", self.root)
+        metadata = set_release("0.1.0-preview.2", "2026-11-30", self.root, today=TODAY)
+        self.assertIsNone(metadata["doi"])
+        self.assertNotIn("10.5281/zenodo.1111111", (self.root / "CITATION.cff").read_text())
+        set_doi("10.5281/zenodo.2222222", self.root)
+        self.assertEqual("10.5281/zenodo.2222222", read_metadata(self.root)["doi"])
+
     def test_command_line_check_uses_the_selected_root(self):
         citation = self.root / "CITATION.cff"
         citation.write_text(citation.read_text().replace('version: "0.1.0-preview.1"', 'version: "9.9.9"'))
