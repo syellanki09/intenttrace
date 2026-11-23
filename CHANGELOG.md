@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Maven Central publication for `intenttrace-detector` and
+  `intenttrace-detector-otel` under `io.github.syellanki09`, with sources, API
+  documentation, complete POM metadata, reproducible archives and optional
+  signing. A bundle checker enforces Central Portal rules, an outside consumer
+  example builds only from the published artifacts, and a manual release
+  workflow validates the tag commit before signing or uploading anything.
+  Release metadata tooling sets version, date and citation together and checks
+  that they agree.
+
 - Experimental runtime detector (`detector` module, no dependencies) with
   oracle-backed and age-based freshness checks, missing-context reporting,
   bounded duplicate and conflicting-delivery detection, and event-time state

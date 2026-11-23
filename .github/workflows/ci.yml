@@ -69,6 +69,22 @@ jobs:
       - name: Compare detector findings with fixture ground truth
         run: ./gradlew :benchmarks:runDetectorAgreement --no-daemon
 
+      - name: Check release metadata agrees
+        run: python3 tools/release_metadata.py check
+
+      - name: Stage library artifacts and check them against Maven Central rules
+        run: |
+          ./gradlew publishAllPublicationsToCentralStagingRepository --no-daemon
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' build.gradle.kts)"
+          python3 tools/build_central_bundle.py build/central-staging \
+            --namespace io.github.syellanki09 --version "$version" --allow-unsigned
+
+      - name: Build and test the outside consumer example from staged artifacts
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' build.gradle.kts)"
+          ./gradlew -p examples/detector-consumer test run --no-daemon \
+            -PintenttraceRepository="$PWD/build/central-staging" -PintenttraceVersion="$version"
+
       - name: Package reproduction evidence
         run: python3 tools/bundle_results.py benchmarks/build/results/stale-context/results.jsonl --output benchmarks/build/results/stale-context-bundle.zip
 
