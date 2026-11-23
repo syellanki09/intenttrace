@@ -116,6 +116,12 @@ code or state, then compares it with `findings.jsonl`.
 Repeats are counted, so a finding matches at most one instance of its condition. Decision-level
 conditions are also reported separately for the fixed-rate and saturation phases.
 
+A version's commit time is taken just before its write to the primary, and the log also records when
+that write returned. A decision made between the two cannot tell whether the oracle saw the new
+version, so either verdict would be defensible. When the stale-read verdict depends on it, the
+decision and any finding for it are left out of stale-read scoring and counted as ambiguous in
+`evaluation.json`.
+
 ## Run it
 
 Needs Docker with Compose, JDK 17 or later, and Python 3.9 or later.
@@ -129,6 +135,10 @@ Results go to `build/system-benchmark/`: one directory per run with its logs, `m
 `evaluation.json`, plus `summary.json` and `summary.md` for all runs. Add `--down` to stop the
 containers afterwards. The containers listen only on 127.0.0.1.
 
+`--output` must be a new or empty directory, or one this script made earlier. In its own directory the
+script replaces only earlier runs and summaries, and only after the build has succeeded, so a failed
+build leaves earlier results in place.
+
 To score a single run again:
 
 ```bash
@@ -137,7 +147,7 @@ python3 tools/evaluate_system_benchmark.py build/system-benchmark/r1-on
 
 ## Results
 
-Three repetitions of each mode at commit `eef5991`, on one host with 4 processors, Java 17 and
+Three repetitions of each mode at commit `3004ff0`, on one host with 4 processors, Java 17 and
 G1 with a 1 GiB heap, with Kafka and Redis in Docker on the same host. The full summary is in
 [results/system-benchmark](results/system-benchmark/summary.md), with each metric's minimum and
 maximum in `summary.json`.
@@ -148,17 +158,18 @@ Medians across repetitions, with the range in brackets.
 
 | Metric | Detector off | Inline checks | Off-path checks |
 | --- | --- | --- | --- |
-| Decision latency p50 | 188 µs (186 to 198) | 379 µs (367 to 391) | 198 µs (194 to 201) |
-| Decision latency p99 | 1.62 ms (1.46 to 2.39) | 2.95 ms (2.52 to 2.96) | 2.24 ms (1.74 to 2.26) |
-| Decision service time p99 | 909 µs (905 to 967) | 1.46 ms (1.38 to 1.47) | 918 µs (915 to 992) |
-| CPU per decision | 77.7 µs | 110 µs | 122 µs |
-| Saturation throughput | 20,487/s (20,460 to 21,125) | 10,214/s (9,811 to 10,694) | 18,835/s (18,093 to 19,698) |
-| Oracle query p50 / p99 | n/a | 155 µs / 675 µs | 136 µs / 585 µs |
-| Consumer CPU per event | 67.5 µs | 76.6 µs | 73.7 µs |
-| Heap used after GC | 17.7 MiB | 83.9 MiB | 88.1 MiB |
+| Decision latency p50 | 198 µs (184 to 226) | 432 µs (379 to 463) | 200 µs (197 to 282) |
+| Decision latency p99 | 1.74 ms (1.73 to 2.20) | 4.51 ms (4.03 to 5.17) | 2.18 ms (1.91 to 4.98) |
+| Decision service time p99 | 943 µs (942 to 1,241) | 1.94 ms (1.66 to 1.99) | 1.03 ms (0.99 to 1.62) |
+| CPU per decision | 81.2 µs | 116 µs | 123 µs |
+| Saturation throughput | 21,533/s (14,205 to 21,680) | 7,716/s (7,349 to 10,195) | 19,123/s (17,846 to 20,310) |
+| Oracle query p50 / p99 | n/a | 172 µs / 919 µs | 138 µs / 636 µs |
+| Consumer CPU per event | 69.4 µs | 80.4 µs | 72.5 µs |
+| Heap used after GC | 17.7 MiB | 82.3 MiB | 87.9 MiB |
 
-The p99.9 latency varied widely between repetitions even with the detector off (4.3 to 19.2 ms),
-so this setup cannot resolve the detector's effect on the extreme tail.
+The p99.9 latency varied widely between repetitions even with the detector off (6.6 to 13.8 ms),
+so this setup cannot resolve the detector's effect on the extreme tail. Saturation throughput also
+varied by up to a third within a mode, so compare the modes by their ranges, not only their medians.
 
 ### Detection
 
@@ -166,52 +177,52 @@ Pooled across the three repetitions. Recall is split by the phase that issued th
 
 | Condition | Ground truth (inline) | Precision | Recall inline | Recall off-path, fixed rate | Recall off-path, saturation |
 | --- | --- | --- | --- | --- | --- |
-| Stale read at decision | 26,652 | 1.0000 | 0.9943 | 0.9992 | 0.1626 |
-| Missing context at decision | 13,190 | 1.0000 | 1.0000 | 1.0000 | 0.4021 |
-| Event arrived after a decision that needed it | 26,693 | 1.0000 | 0.9880 | 0.8518 | 0.0005 |
-| Older event replaced newer state | 1,105 | 1.0000 | 1.0000 | 1.0000 (all phases) | |
+| Stale read at decision | 27,199 | 1.0000 | 1.0000 | 1.0000 | 0.1689 |
+| Missing context at decision | 11,952 | 1.0000 | 1.0000 | 1.0000 | 0.4051 |
+| Event arrived after a decision that needed it | 32,597 | 1.0000 | 0.9924 | 0.8115 | 0.0004 |
+| Older event replaced newer state | 1,108 | 1.0000 | 1.0000 | 1.0000 (all phases) | |
 | Duplicate delivery | 3,267 | 1.0000 | 1.0000 | 1.0000 (all phases) | |
 | Reused identity, different payload | 300 | 1.0000 | 1.0000 | 1.0000 (all phases) | |
 
 Precision was 1.0 in every condition and mode: no finding disagreed with the ground truth from
 the host's logs.
 
+Inline, 1,238 of 522,683 decisions (0.24%) fell inside a primary write and were left out of
+stale-read scoring; the detector reported 1,100 of them as stale. Counting all of them as stale
+reads instead would put inline stale-read recall at 0.9951.
+
 ### What the numbers show
 
 - **The inline cost is mostly the oracle.** Checking a decision inline adds one Redis query to the
-  decision path, about 155 µs at the median. That doubles median decision latency and halves
-  saturation throughput. The detector's own CPU cost is about 32 µs per decision.
-- **Off-path checks keep latency close to baseline** (median +5%, saturation throughput -8%). At
-  the fixed rate they find almost every stale or missing read, because the oracle answers for the
+  decision path, about 172 µs at the median. That roughly doubles median decision latency and cuts
+  saturation throughput by more than half. The detector's own CPU cost is about 35 µs per decision.
+- **Off-path checks keep latency close to baseline** (median +1%, saturation throughput -11%). At
+  the fixed rate they find every stale or missing read, because the oracle answers for the
   decision's own timestamp, however late the check runs.
 - **Off-path checks miss late arrivals.** The decision is recorded with the event-time monitor only
   when its background check runs, so events that arrive in between cannot be attributed to it.
-  Recall for late arrivals falls to 0.85 at the fixed rate. A host that wants both would need to
+  Recall for late arrivals falls to 0.81 at the fixed rate. A host that wants both would need to
   record the decision inline and run only the oracle query off the path. The detector API does not
   separate those two steps yet.
 - **An overloaded off-path checker loses coverage.** At saturation the single checker thread falls
-  behind: its queue delay reached up to 8.7 s, and about 93,000 checks per run were dropped from
-  the full queue. The primary keeps only the latest 64 versions per user, so late checks for hot
-  users also lose their oracle answer. Drops are counted in `metrics.json`; a host would size the
-  checker and alert on drops.
+  behind: its queue delay reached up to 8.4 s, and 85,000 to 104,000 checks per run were dropped
+  from the full queue. The primary keeps only the latest 64 versions per user, so late checks for
+  hot users also lose their oracle answer. Drops are counted in `metrics.json`; a host would size
+  the checker and alert on drops.
 - **Idempotent processing prevents harm, not only reports it.** With the detector off, the
-  consumer re-applied duplicates of older events, and state regressed 2,106 times. With the replay
-  guard's verdict followed, it regressed 1,105 times. This is also why
-  event propagation p99 is lower with the detector on: duplicates re-applied 80 ms later no longer
-  count.
+  consumer re-applied duplicates of older events, and state regressed 2,108 times. With the replay
+  guard's verdict followed, it regressed 1,108 times. This is also why event propagation p99 is
+  lower with the detector on: duplicates re-applied 80 ms later no longer count.
 - **Retained memory is the detector's bounded state at its limits**: 100,000 tracked arrivals (the
   cap), about 110,000 replay identities within the 10-minute retention, and 64 recent decisions for
   each of 10,000 users. All three bounds are configurable.
 
-### Why some conditions were missed inline
+### Why some late arrivals were missed inline
 
-- **Stale reads (152 of 26,652).** In 151 of them, the newer version had been committed less than
-  1 ms before the decision. The producer takes its commit timestamp just before the Redis write, so
-  for that instant the version is committed by the log but not yet visible to the oracle.
-- **Late arrivals (320 of 26,693), mostly at saturation.** About 93% were on the hottest user,
-  which can receive more than 64 decisions while one event is delayed, so the decision falls out of
-  the event-time monitor's per-key window. Separately, 39 of the 320 events arrived within 1 ms of
-  the decision, a window in which the check may not yet have recorded it.
+Inline checks missed 247 of 32,597 late arrivals. 223 of them (90%) were on the hottest user,
+which can receive more than 64 decisions while one event is delayed, so the decision falls out of
+the event-time monitor's per-key window. Separately, 38 of the 247 events arrived within 1 ms of
+the decision, a window in which the check may not yet have recorded it.
 
 ## Limits
 
@@ -224,6 +235,8 @@ the host's logs.
   delay. Hosts would normally set a tolerance.
 - Ground truth trusts the host's logs, which record times from one clock. Clock skew between
   machines is not exercised.
+- Decisions made during a primary write are left out of stale-read scoring, as described under
+  Ground truth, so stale-read recall covers 99.8% of inline decisions, not all of them.
 - The off-path mode uses one checker thread and a 50,000-entry queue. Other sizes would change the
   saturation results.
 - The workload, faults and rates are synthetic. They exercise the detector's checks; they do not
