@@ -4,10 +4,10 @@
 
 An open, nonproprietary reliability and evaluation framework for detecting, reproducing, tracing, and benchmarking **hidden information-integrity failures** in personalization, recommendation, and increasingly AI-enabled distributed systems.
 
-Every service can report healthy while the decision a user sees was made on stale, missing, late, duplicated, conflicting, or misinterpreted information. Such failures leave no crash and no error to measure. IntentTrace provides two things for them:
+Every service can report healthy while the decision a user sees was made on stale, missing, late, duplicated, conflicting, or misinterpreted information. Such failures leave no crash and no error to measure. IntentTrace provides two things for them, with current coverage shown [below](#failure-classes-and-coverage):
 
-- **A benchmark harness** that injects each failure deterministically into a clean-room reference pipeline, judges the outcome against independent ground truth, and packages verifiable evidence.
-- **A runtime detector** that a host service runs itself, reporting the same failure classes from evidence the host already has and publishing findings through OpenTelemetry.
+- **A benchmark harness** that injects implemented failure scenarios deterministically into a clean-room reference pipeline, judges the outcome against independent ground truth, and packages verifiable evidence.
+- **A runtime detector** that a host service runs itself, reporting supported failure classes from evidence the host already has and publishing findings through OpenTelemetry.
 
 ## How it works
 
