@@ -1,0 +1,806 @@
+{
+  "detection": {
+    "off": {
+      "conflicting-values:delivery": {
+        "falseNegatives": 300,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 300
+      },
+      "delayed-events:pair": {
+        "falseNegatives": 36036,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 36036
+      },
+      "duplicate-replay:delivery": {
+        "falseNegatives": 3267,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 3267
+      },
+      "missing-context:decision": {
+        "falseNegatives": 20374,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 20374
+      },
+      "stale-context:decision": {
+        "falseNegatives": 41014,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 41014
+      },
+      "stale-context:regression": {
+        "falseNegatives": 2106,
+        "falsePositives": 0,
+        "found": 0,
+        "precision": null,
+        "recall": 0.0,
+        "truePositives": 0,
+        "truth": 2106
+      }
+    },
+    "on": {
+      "conflicting-values:delivery": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 300,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 300,
+        "truth": 300
+      },
+      "delayed-events:pair": {
+        "falseNegatives": 320,
+        "falsePositives": 0,
+        "found": 26373,
+        "precision": 1.0,
+        "recall": 0.9880118383096692,
+        "truePositives": 26373,
+        "truth": 26693
+      },
+      "duplicate-replay:delivery": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 3267,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 3267,
+        "truth": 3267
+      },
+      "missing-context:decision": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 13190,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 13190,
+        "truth": 13190
+      },
+      "stale-context:decision": {
+        "falseNegatives": 152,
+        "falsePositives": 0,
+        "found": 26500,
+        "precision": 1.0,
+        "recall": 0.9942968632748012,
+        "truePositives": 26500,
+        "truth": 26652
+      },
+      "stale-context:regression": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 1105,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 1105,
+        "truth": 1105
+      }
+    },
+    "on-async": {
+      "conflicting-values:delivery": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 300,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 300,
+        "truth": 300
+      },
+      "delayed-events:pair": {
+        "falseNegatives": 29190,
+        "falsePositives": 0,
+        "found": 10006,
+        "precision": 1.0,
+        "recall": 0.2552811511378712,
+        "truePositives": 10006,
+        "truth": 39196
+      },
+      "duplicate-replay:delivery": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 3267,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 3267,
+        "truth": 3267
+      },
+      "missing-context:decision": {
+        "falseNegatives": 7985,
+        "falsePositives": 0,
+        "found": 11475,
+        "precision": 1.0,
+        "recall": 0.5896711202466598,
+        "truePositives": 11475,
+        "truth": 19460
+      },
+      "stale-context:decision": {
+        "falseNegatives": 22492,
+        "falsePositives": 0,
+        "found": 16265,
+        "precision": 1.0,
+        "recall": 0.4196661248290631,
+        "truePositives": 16265,
+        "truth": 38757
+      },
+      "stale-context:regression": {
+        "falseNegatives": 0,
+        "falsePositives": 0,
+        "found": 1105,
+        "precision": 1.0,
+        "recall": 1.0,
+        "truePositives": 1105,
+        "truth": 1105
+      }
+    }
+  },
+  "detectionByDecisionPhase": {
+    "off": {
+      "fixed": {
+        "delayed-events:pair": {
+          "falseNegatives": 10808,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 10808
+        },
+        "missing-context:decision": {
+          "falseNegatives": 6057,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 6057
+        },
+        "stale-context:decision": {
+          "falseNegatives": 12002,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 12002
+        }
+      },
+      "saturation": {
+        "delayed-events:pair": {
+          "falseNegatives": 25228,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 25228
+        },
+        "missing-context:decision": {
+          "falseNegatives": 14317,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 14317
+        },
+        "stale-context:decision": {
+          "falseNegatives": 29012,
+          "falsePositives": 0,
+          "found": 0,
+          "precision": null,
+          "recall": 0.0,
+          "truePositives": 0,
+          "truth": 29012
+        }
+      }
+    },
+    "on": {
+      "fixed": {
+        "delayed-events:pair": {
+          "falseNegatives": 14,
+          "falsePositives": 0,
+          "found": 12874,
+          "precision": 1.0,
+          "recall": 0.9989137181874612,
+          "truePositives": 12874,
+          "truth": 12888
+        },
+        "missing-context:decision": {
+          "falseNegatives": 0,
+          "falsePositives": 0,
+          "found": 6126,
+          "precision": 1.0,
+          "recall": 1.0,
+          "truePositives": 6126,
+          "truth": 6126
+        },
+        "stale-context:decision": {
+          "falseNegatives": 58,
+          "falsePositives": 0,
+          "found": 12235,
+          "precision": 1.0,
+          "recall": 0.9952818677296023,
+          "truePositives": 12235,
+          "truth": 12293
+        }
+      },
+      "saturation": {
+        "delayed-events:pair": {
+          "falseNegatives": 306,
+          "falsePositives": 0,
+          "found": 13499,
+          "precision": 1.0,
+          "recall": 0.9778341180731619,
+          "truePositives": 13499,
+          "truth": 13805
+        },
+        "missing-context:decision": {
+          "falseNegatives": 0,
+          "falsePositives": 0,
+          "found": 7064,
+          "precision": 1.0,
+          "recall": 1.0,
+          "truePositives": 7064,
+          "truth": 7064
+        },
+        "stale-context:decision": {
+          "falseNegatives": 94,
+          "falsePositives": 0,
+          "found": 14265,
+          "precision": 1.0,
+          "recall": 0.9934535831186015,
+          "truePositives": 14265,
+          "truth": 14359
+        }
+      }
+    },
+    "on-async": {
+      "fixed": {
+        "delayed-events:pair": {
+          "falseNegatives": 1738,
+          "falsePositives": 0,
+          "found": 9993,
+          "precision": 1.0,
+          "recall": 0.8518455374648367,
+          "truePositives": 9993,
+          "truth": 11731
+        },
+        "missing-context:decision": {
+          "falseNegatives": 0,
+          "falsePositives": 0,
+          "found": 6106,
+          "precision": 1.0,
+          "recall": 1.0,
+          "truePositives": 6106,
+          "truth": 6106
+        },
+        "stale-context:decision": {
+          "falseNegatives": 10,
+          "falsePositives": 0,
+          "found": 11901,
+          "precision": 1.0,
+          "recall": 0.999160439929477,
+          "truePositives": 11901,
+          "truth": 11911
+        }
+      },
+      "saturation": {
+        "delayed-events:pair": {
+          "falseNegatives": 27452,
+          "falsePositives": 0,
+          "found": 13,
+          "precision": 1.0,
+          "recall": 0.0004733296923357,
+          "truePositives": 13,
+          "truth": 27465
+        },
+        "missing-context:decision": {
+          "falseNegatives": 7985,
+          "falsePositives": 0,
+          "found": 5369,
+          "precision": 1.0,
+          "recall": 0.40205181967949677,
+          "truePositives": 5369,
+          "truth": 13354
+        },
+        "stale-context:decision": {
+          "falseNegatives": 22482,
+          "falsePositives": 0,
+          "found": 4364,
+          "precision": 1.0,
+          "recall": 0.16255680548312598,
+          "truePositives": 4364,
+          "truth": 26846
+        }
+      }
+    }
+  },
+  "environment": {
+    "javaVersion": "17.0.21.1",
+    "platform": "Linux-6.18.44-fc-v726-x86_64-with-glibc2.39",
+    "processors": 4,
+    "sourceCommit": "eef5991d231f47c317e49a8ce8e0e7a4d4742c02",
+    "sourceDirty": false
+  },
+  "failures": {
+    "anomalies": 0,
+    "checkFailures": 0,
+    "droppedChecks": 278213,
+    "sendFailures": 0,
+    "sinkFailures": 0
+  },
+  "performance": [
+    {
+      "change:on": 191.32000000000002,
+      "change:on-async": 10.147999999999996,
+      "lowerIsBetter": true,
+      "metric": "Decision latency p50",
+      "off": {
+        "max": 197.575,
+        "median": 187.605,
+        "min": 186.087,
+        "runs": 3
+      },
+      "on": {
+        "max": 390.593,
+        "median": 378.925,
+        "min": 367.069,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 200.903,
+        "median": 197.753,
+        "min": 194.124,
+        "runs": 3
+      },
+      "relativeChange:on": 1.0198022440766505,
+      "relativeChange:on-async": 0.054092374936702096,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 1333.4159999999997,
+      "change:on-async": 624.77,
+      "lowerIsBetter": true,
+      "metric": "Decision latency p99",
+      "off": {
+        "max": 2392.273,
+        "median": 1616.726,
+        "min": 1457.121,
+        "runs": 3
+      },
+      "on": {
+        "max": 2962.443,
+        "median": 2950.142,
+        "min": 2523.645,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 2259.426,
+        "median": 2241.496,
+        "min": 1738.109,
+        "runs": 3
+      },
+      "relativeChange:on": 0.824763132404625,
+      "relativeChange:on-async": 0.38644148730211547,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 20160.574,
+      "change:on-async": 18099.444,
+      "lowerIsBetter": true,
+      "metric": "Decision latency p99.9",
+      "off": {
+        "max": 19188.039,
+        "median": 4759.592,
+        "min": 4279.554,
+        "runs": 3
+      },
+      "on": {
+        "max": 26195.96,
+        "median": 24920.166,
+        "min": 20013.166,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 23077.051,
+        "median": 22859.036,
+        "min": 19474.604,
+        "runs": 3
+      },
+      "relativeChange:on": 4.2357777725485715,
+      "relativeChange:on-async": 3.8027301499792423,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 183.80900000000003,
+      "change:on-async": 8.823000000000008,
+      "lowerIsBetter": true,
+      "metric": "Decision service time p50",
+      "off": {
+        "max": 184.479,
+        "median": 176.44,
+        "min": 174.816,
+        "runs": 3
+      },
+      "on": {
+        "max": 370.005,
+        "median": 360.249,
+        "min": 351.388,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 187.433,
+        "median": 185.263,
+        "min": 181.684,
+        "runs": 3
+      },
+      "relativeChange:on": 1.0417649059170258,
+      "relativeChange:on-async": 0.05000566764905921,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 554.5620000000001,
+      "change:on-async": 8.784999999999968,
+      "lowerIsBetter": true,
+      "metric": "Decision service time p99",
+      "off": {
+        "max": 967.335,
+        "median": 908.914,
+        "min": 905.394,
+        "runs": 3
+      },
+      "on": {
+        "max": 1469.469,
+        "median": 1463.476,
+        "min": 1382.938,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 992.238,
+        "median": 917.699,
+        "min": 914.813,
+        "runs": 3
+      },
+      "relativeChange:on": 0.6101369326470932,
+      "relativeChange:on-async": 0.00966538088311982,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 31.88000000000001,
+      "change:on-async": 44.11500000000001,
+      "lowerIsBetter": true,
+      "metric": "Decision CPU per decision",
+      "off": {
+        "max": 79.816,
+        "median": 77.672,
+        "min": 77.478,
+        "runs": 3
+      },
+      "on": {
+        "max": 113.008,
+        "median": 109.552,
+        "min": 108.948,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 122.97,
+        "median": 121.787,
+        "min": 119.215,
+        "runs": 3
+      },
+      "relativeChange:on": 0.41044391801421376,
+      "relativeChange:on-async": 0.5679652899371719,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 1797.1990000000005,
+      "change:on-async": 1853.9570000000003,
+      "lowerIsBetter": true,
+      "metric": "Allocation per decision",
+      "off": {
+        "max": 3212.332,
+        "median": 3211.245,
+        "min": 3189.994,
+        "runs": 3
+      },
+      "on": {
+        "max": 5020.057,
+        "median": 5008.444,
+        "min": 4976.27,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 5117.084,
+        "median": 5065.202,
+        "min": 5047.046,
+        "runs": 3
+      },
+      "relativeChange:on": 0.5596580142592672,
+      "relativeChange:on-async": 0.5773327790311858,
+      "unit": "bytes"
+    },
+    {
+      "change:on": -10273.099999999999,
+      "change:on-async": -1652.5,
+      "lowerIsBetter": false,
+      "metric": "Saturation throughput",
+      "off": {
+        "max": 21124.8,
+        "median": 20487.1,
+        "min": 20460.2,
+        "runs": 3
+      },
+      "on": {
+        "max": 10693.7,
+        "median": 10214.0,
+        "min": 9810.7,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 19698.3,
+        "median": 18834.6,
+        "min": 18093.2,
+        "runs": 3
+      },
+      "relativeChange:on": -0.501442371053004,
+      "relativeChange:on-async": -0.0806605132009899,
+      "unit": "decisions/s"
+    },
+    {
+      "lowerIsBetter": true,
+      "metric": "Oracle call p50",
+      "off": null,
+      "on": {
+        "max": 157.857,
+        "median": 155.058,
+        "min": 150.677,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 139.092,
+        "median": 135.85,
+        "min": 134.174,
+        "runs": 3
+      },
+      "unit": "\u00b5s"
+    },
+    {
+      "lowerIsBetter": true,
+      "metric": "Oracle call p99",
+      "off": null,
+      "on": {
+        "max": 713.444,
+        "median": 675.428,
+        "min": 658.098,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 586.141,
+        "median": 584.866,
+        "min": 583.254,
+        "runs": 3
+      },
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 9.070999999999998,
+      "change:on-async": 6.170999999999992,
+      "lowerIsBetter": true,
+      "metric": "Consumer CPU per event",
+      "off": {
+        "max": 70.239,
+        "median": 67.539,
+        "min": 66.04,
+        "runs": 3
+      },
+      "on": {
+        "max": 76.954,
+        "median": 76.61,
+        "min": 73.16,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 75.303,
+        "median": 73.71,
+        "min": 71.732,
+        "runs": 3
+      },
+      "relativeChange:on": 0.13430758524704242,
+      "relativeChange:on-async": 0.09136943099542474,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 1752.5059999999994,
+      "change:on-async": 1738.315999999999,
+      "lowerIsBetter": true,
+      "metric": "Allocation per event",
+      "off": {
+        "max": 13520.868,
+        "median": 13457.816,
+        "min": 13439.392,
+        "runs": 3
+      },
+      "on": {
+        "max": 15331.134,
+        "median": 15210.322,
+        "min": 15160.992,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 15315.254,
+        "median": 15196.132,
+        "min": 15149.24,
+        "runs": 3
+      },
+      "relativeChange:on": 0.13022216977851378,
+      "relativeChange:on-async": 0.12916776392246698,
+      "unit": "bytes"
+    },
+    {
+      "change:on": 90.0,
+      "change:on-async": 45.0,
+      "lowerIsBetter": true,
+      "metric": "Event propagation p50",
+      "off": {
+        "max": 2012.0,
+        "median": 1926.0,
+        "min": 1905.0,
+        "runs": 3
+      },
+      "on": {
+        "max": 2072.0,
+        "median": 2016.0,
+        "min": 1962.0,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 2000.0,
+        "median": 1971.0,
+        "min": 1928.0,
+        "runs": 3
+      },
+      "relativeChange:on": 0.04672897196261682,
+      "relativeChange:on-async": 0.02336448598130841,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": -45954.0,
+      "change:on-async": -48691.0,
+      "lowerIsBetter": true,
+      "metric": "Event propagation p99",
+      "off": {
+        "max": 88448.0,
+        "median": 87026.0,
+        "min": 86126.0,
+        "runs": 3
+      },
+      "on": {
+        "max": 48911.0,
+        "median": 41072.0,
+        "min": 27806.0,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 51773.0,
+        "median": 38335.0,
+        "min": 34994.0,
+        "runs": 3
+      },
+      "relativeChange:on": -0.5280490887780663,
+      "relativeChange:on-async": -0.5594994599315147,
+      "unit": "\u00b5s"
+    },
+    {
+      "change:on": 69446440,
+      "change:on-async": 73828680,
+      "lowerIsBetter": true,
+      "metric": "Heap used after GC",
+      "off": {
+        "max": 18583032,
+        "median": 18548504,
+        "min": 18539464,
+        "runs": 3
+      },
+      "on": {
+        "max": 88356704,
+        "median": 87994944,
+        "min": 87557568,
+        "runs": 3
+      },
+      "on-async": {
+        "max": 92584856,
+        "median": 92377184,
+        "min": 92141424,
+        "runs": 3
+      },
+      "relativeChange:on": 3.744045341877706,
+      "relativeChange:on-async": 3.9803037484855923,
+      "unit": "bytes"
+    }
+  ],
+  "runs": [
+    {
+      "mode": "off",
+      "repetition": 1
+    },
+    {
+      "mode": "on",
+      "repetition": 1
+    },
+    {
+      "mode": "on-async",
+      "repetition": 1
+    },
+    {
+      "mode": "on",
+      "repetition": 2
+    },
+    {
+      "mode": "on-async",
+      "repetition": 2
+    },
+    {
+      "mode": "off",
+      "repetition": 2
+    },
+    {
+      "mode": "on-async",
+      "repetition": 3
+    },
+    {
+      "mode": "off",
+      "repetition": 3
+    },
+    {
+      "mode": "on",
+      "repetition": 3
+    }
+  ],
+  "schemaVersion": 1,
+  "settings": {
+    "decisionsPerSecond": 2000,
+    "eventsPerSecond": 2000,
+    "measureSeconds": 30,
+    "repetitions": 3,
+    "saturationSeconds": 10,
+    "seed": 42,
+    "users": 10000,
+    "warmupSeconds": 15
+  }
+}
