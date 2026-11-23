@@ -132,3 +132,36 @@ jobs:
             build/suite/**/suite-report.json
           if-no-files-found: error
           retention-days: 30
+
+  system-benchmark-smoke:
+    name: System benchmark smoke run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Run one short repetition against Kafka and Redis
+        run: python3 tools/run_system_benchmark.py --smoke --down --output build/system-benchmark
+
+      - name: Retain smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-benchmark-smoke-${{ github.sha }}
+          path: |
+            build/system-benchmark/summary.json
+            build/system-benchmark/summary.md
+            build/system-benchmark/*/metrics.json
+            build/system-benchmark/*/evaluation.json
+          if-no-files-found: warn
+          retention-days: 30

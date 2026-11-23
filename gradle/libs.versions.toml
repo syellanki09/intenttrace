@@ -3,6 +3,9 @@ kotlin = "2.2.20"
 serialization = "1.9.0"
 opentelemetry = "1.68.0"
 dokka = "2.0.0"
+kafka = "3.9.1"
+jedis = "5.2.0"
+slf4j = "2.0.17"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -10,6 +13,9 @@ dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", vers
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+jedis = { module = "redis.clients:jedis", version.ref = "jedis" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
