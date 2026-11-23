@@ -148,13 +148,17 @@ class PrimaryProducer(
         val user = scheduled.user
         val version = ++versions[user]
         val payload = "p$user.$version.${java.lang.Long.toHexString(payloadRandom.nextLong())}"
+        // The commit time is taken before the write, so the version is committed by the log a little before the
+        // oracle can see it. The time after the write returns bounds that interval; the evaluator leaves
+        // decisions inside it out of freshness scoring, because either verdict would be defensible.
         val committed = Micros.of(clock.instant())
         redis.zadd(primaryKey(user), committed.toDouble(), version.toString())
+        val visible = Micros.nanosOf(clock.instant())
         if (version % 16 == 0L) redis.zremrangeByRank(primaryKey(user), 0, -(KEPT_PRIMARY_VERSIONS + 1L))
         val event = ContextEvent("e${scheduled.index}", user, version, committed, payload)
         commits.write(
             "eventId" to event.eventId, "user" to user, "version" to version,
-            "committedMicros" to committed, "payload" to payload, "fault" to scheduled.fault.id
+            "committedMicros" to committed, "visibleNanos" to visible, "payload" to payload, "fault" to scheduled.fault.id
         )
         return event
     }
@@ -378,8 +382,13 @@ class SystemBenchmark(private val config: BenchmarkConfig) {
         partitions.forEach { consumer.position(it) }
         val producer = KafkaProducer<String, String>(producerProperties())
 
-        val logs = mutableListOf<JsonlLog>()
-        fun log(name: String) = JsonlLog(out.resolve(name)).also { logs += it }
+        // Every log is opened here, before any worker starts, so none can be missed when they are closed.
+        val logs = LogRegistry(out)
+        val arrivals = logs.open("arrivals.jsonl")
+        val applies = logs.open("applies.jsonl")
+        val commits = logs.open("commits.jsonl")
+        val decisionLogs = (0 until config.decisionThreads).map { logs.open("decisions-$it.jsonl") }
+        val evictions = logs.open("evictions.jsonl")
         val saturationCount = AtomicLong()
         val failures = CopyOnWriteArrayList<Throwable>()
         fun worker(name: String, body: () -> Unit) = thread(name = name, start = false) {
@@ -388,21 +397,20 @@ class SystemBenchmark(private val config: BenchmarkConfig) {
 
         val consumerThread = worker("cache-consumer") {
             CacheConsumer(config, consumer, partitions, Jedis(config.redisHost, config.redisPort), detector,
-                log("arrivals.jsonl"), log("applies.jsonl"), state, clock).run()
+                arrivals, applies, state, clock).run()
         }
         val producerThread = worker("primary-producer") {
             PrimaryProducer(config, workload, Jedis(config.redisHost, config.redisPort), producer,
-                log("commits.jsonl"), state, clock).run()
+                commits, state, clock).run()
         }
         val decisionThreads = (0 until config.decisionThreads).map { w ->
             worker("decision-$w") {
-                DecisionWorker(w, config, workload, connections, detector, log("decisions-$w.jsonl"),
+                DecisionWorker(w, config, workload, connections, detector, decisionLogs[w],
                     state, clock, saturationCount, checker).run()
             }
         }
         val evictorThread = worker("cache-evictor") {
             val redis = Jedis(config.redisHost, config.redisPort)
-            val evictions = log("evictions.jsonl")
             for (eviction in workload.evictions) {
                 state.waitUntil(eviction.atNanos)
                 redis.del(cacheKey(eviction.user))
@@ -429,7 +437,7 @@ class SystemBenchmark(private val config: BenchmarkConfig) {
         producer.close()
         state.producerDone = true
         consumerThread.join()
-        logs.forEach { it.close() }
+        logs.close()
         findingsWriter.close()
         consumer.close()
         check(failures.isEmpty()) { "Benchmark thread failed: ${failures.first()}" }

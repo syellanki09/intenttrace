@@ -2,6 +2,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 
@@ -127,6 +128,24 @@ class EvaluateSystemBenchmarkTest(unittest.TestCase):
         # d1 also missed e1. With microseconds alone, d5's pair would be a tie and not counted.
         self.assertEqual((pairs["truth"], pairs["truePositives"], pairs["falsePositives"]), (2, 1, 0))
 
+    def test_decisions_inside_a_commit_write_are_excluded_from_freshness_scoring(self):
+        FixtureRun(self.temp.name, [finding("stale-context", decision_id="d6")])
+        # e1 is stamped at 2000 µs but its primary write returns only at 2300 µs, so a decision at 2200 µs
+        # cannot tell whether the oracle sees it, so its healthy check must not count as a miss.
+        # d6 at 2400 µs comes after the write and stays stale.
+        write_jsonl(os.path.join(self.temp.name, "commits.jsonl"),
+                    [dict(commit("e1", 1, 2, 2000), visibleNanos=2_300_000),
+                     dict(commit("e2", 1, 3, 3000), visibleNanos=3_050_000)])
+        write_jsonl(os.path.join(self.temp.name, "decisions-0.jsonl"), [
+            decision("d1", 1, 2200, 1, 1000),
+            decision("d6", 1, 2400, 1, 1000),
+        ])
+        write_jsonl(os.path.join(self.temp.name, "decisions-1.jsonl"), [])
+        result = evaluator.evaluate(self.temp.name)
+        stale = result["categories"]["stale-context:decision"]
+        self.assertEqual((stale["truth"], stale["truePositives"], stale["falseNegatives"]), (1, 1, 0))
+        self.assertEqual(result["counts"]["ambiguousDecisions"], 1)
+
     def test_version_lag_tolerance_changes_stale_truth(self):
         result = self.evaluate([], lag=1)
         self.assertNotIn("stale-context:decision", result["categories"])
@@ -164,6 +183,52 @@ def fake_run(mode, latency_p50, stale_truth, stale_found, repetition=1):
 
 
 class RunSystemBenchmarkTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.commands = []
+        original = runner.run
+        self.addCleanup(setattr, runner, "run", original)
+
+    def fail_on_build(self, command):
+        self.commands.append(command)
+        if any("installDist" in part for part in command):
+            raise subprocess.CalledProcessError(1, command)
+
+    def test_an_unrelated_output_directory_is_never_deleted(self):
+        output = os.path.join(self.temp.name, "evidence")
+        os.makedirs(output)
+        kept = os.path.join(output, "notes.txt")
+        with open(kept, "w", encoding="utf-8") as handle:
+            handle.write("keep me")
+        runner.run = self.fail_on_build
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            runner.main(["--smoke", "--no-compose", "--output", output])
+        self.assertTrue(os.path.exists(kept))
+        self.assertEqual(self.commands, [])
+
+    def test_earlier_results_survive_a_failed_build(self):
+        output = os.path.join(self.temp.name, "results")
+        os.makedirs(os.path.join(output, "r1-on"))
+        open(os.path.join(output, runner.OUTPUT_MARKER), "w").close()
+        previous = os.path.join(output, "summary.md")
+        with open(previous, "w", encoding="utf-8") as handle:
+            handle.write("earlier run")
+        runner.run = self.fail_on_build
+        with self.assertRaises(subprocess.CalledProcessError):
+            runner.main(["--smoke", "--no-compose", "--output", output])
+        self.assertTrue(os.path.exists(previous))
+        self.assertTrue(os.path.isdir(os.path.join(output, "r1-on")))
+
+    def test_only_the_runners_own_entries_are_cleared(self):
+        output = os.path.join(self.temp.name, "results")
+        os.makedirs(os.path.join(output, "r2-off"))
+        open(os.path.join(output, runner.OUTPUT_MARKER), "w").close()
+        for name in ("summary.json", "other.txt"):
+            open(os.path.join(output, name), "w").close()
+        runner.clear_output(output)
+        self.assertEqual(sorted(os.listdir(output)), sorted([runner.OUTPUT_MARKER, "other.txt"]))
+
     def test_summary_takes_medians_and_pools_detection(self):
         runs = [
             fake_run("off", 100, 10, 0, 1), fake_run("off", 300, 10, 0, 2), fake_run("off", 200, 10, 0, 3),

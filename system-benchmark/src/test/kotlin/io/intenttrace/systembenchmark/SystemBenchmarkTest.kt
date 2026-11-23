@@ -1,8 +1,11 @@
 package io.intenttrace.systembenchmark
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.util.SplittableRandom
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -73,6 +76,27 @@ class SystemBenchmarkTest {
         val lost = (0 until 100_000).count { isLostWrite("e$it", 5) }
         assertTrue(lost in 350..650, "lost: $lost")
         assertEquals(0, (0 until 1_000).count { isLostWrite("e$it", 0) })
+    }
+
+    @Test
+    fun `logs opened from many threads at once are all flushed on close`() {
+        val directory = Files.createTempDirectory("log-registry")
+        val threads = 8
+        val perThread = 2_000
+        val start = CountDownLatch(1)
+        val registry = LogRegistry(directory, bufferChars = 256)
+        val workers = (0 until threads).map { t ->
+            thread {
+                start.await()
+                repeat(perThread) { i -> registry.open("t$t-$i.jsonl").write("thread" to t, "log" to i) }
+            }
+        }
+        start.countDown()
+        workers.forEach { it.join() }
+        registry.close()
+        assertEquals(threads * perThread, registry.size)
+        val empty = Files.list(directory).use { files -> files.filter { Files.size(it) == 0L }.count() }
+        assertEquals(0L, empty, "logs left unflushed")
     }
 
     @Test

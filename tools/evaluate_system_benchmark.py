@@ -11,7 +11,11 @@ Ground truth, per class:
 
 - stale-context (decision): the decision read version v, and the latest version
   committed to the primary at or before the decision is newer than v by more
-  than ``maxVersionLag``.
+  than ``maxVersionLag``. A commit is stamped just before its primary write, and
+  the log also records when that write returned (``visibleNanos``). A decision
+  made inside that interval cannot tell whether the oracle sees the new
+  version, so when the verdict depends on it the decision is left out of
+  stale-context scoring, findings included, and counted as ambiguous.
 - missing-context (decision): the decision read nothing, although a version had
   been committed.
 - stale-context (state regression): the consumer applied an event that occurred
@@ -78,21 +82,36 @@ class Commits:
     """Versions committed to the primary, per user, in commit order."""
 
     def __init__(self, records: Iterable[dict]):
-        per_user: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
+        per_user: Dict[int, List[Tuple[int, int, int]]] = defaultdict(list)
         for record in records:
-            per_user[record["user"]].append((record["committedMicros"], record["version"]))
+            # Preloaded versions are written before the run starts, so they are visible from the start.
+            visible = record.get("visibleNanos", record["committedMicros"] * 1000)
+            per_user[record["user"]].append((record["committedMicros"], visible, record["version"]))
         self.times: Dict[int, List[int]] = {}
+        self.visible: Dict[int, List[int]] = {}
         self.versions: Dict[int, List[int]] = {}
         for user, entries in per_user.items():
             entries.sort()
-            self.times[user] = [t for t, _ in entries]
-            self.versions[user] = [v for _, v in entries]
+            self.times[user] = [t for t, _, _ in entries]
+            self.visible[user] = [v for _, v, _ in entries]
+            self.versions[user] = [v for _, _, v in entries]
 
     def latest_at(self, user: int, micros: int) -> Optional[int]:
+        """The latest version stamped at or before ``micros``."""
         times = self.times.get(user)
         if not times:
             return None
         index = bisect.bisect_right(times, micros)
+        return self.versions[user][index - 1] if index else None
+
+    def latest_visible_at(self, user: int, micros: int, nanos: int) -> Optional[int]:
+        """The latest version stamped at or before ``micros`` whose write had returned by ``nanos``."""
+        times = self.times.get(user)
+        if not times:
+            return None
+        index = bisect.bisect_right(times, micros)
+        while index and self.visible[user][index - 1] > nanos:
+            index -= 1
         return self.versions[user][index - 1] if index else None
 
 
@@ -109,6 +128,7 @@ def evaluate(run_dir: str) -> dict:
 
     truth: Dict[str, Counter] = defaultdict(Counter)
     anomalies = Counter()
+    ambiguous = set()
 
     # Decisions: freshness against the primary's commit history.
     for decision in decisions:
@@ -119,8 +139,13 @@ def evaluate(run_dir: str) -> dict:
                 truth["missing-context:decision"][decision["decisionId"]] += 1
         elif latest is None or read > latest:
             anomalies["readNewerThanPrimary"] += 1
-        elif latest - read > lag:
-            truth["stale-context:decision"][decision["decisionId"]] += 1
+        else:
+            visible = commits.latest_visible_at(decision["user"], decision["decidedMicros"], decision["decidedNanos"])
+            stale = latest - read > lag
+            if stale != (visible is not None and visible - read > lag):
+                ambiguous.add(decision["decisionId"])
+            elif stale:
+                truth["stale-context:decision"][decision["decisionId"]] += 1
 
     # Deliveries: repeated identities, compared with the first arrival's payload.
     # Arrival and decision times are compared in nanoseconds: an event can arrive
@@ -175,6 +200,7 @@ def evaluate(run_dir: str) -> dict:
 
     found: Dict[str, Counter] = defaultdict(Counter)
     confidence = Counter()
+    excluded = 0
     for finding in findings:
         cls = finding["failureClassId"]
         confidence[(cls, finding["confidence"])] += 1
@@ -183,6 +209,9 @@ def evaluate(run_dir: str) -> dict:
         if cls == "delayed-events":
             found["delayed-events:pair"][(decision_id, event_id)] += 1
         elif decision_id is not None and cls in FRESHNESS_CLASSES:
+            if cls == "stale-context" and decision_id in ambiguous:
+                excluded += 1
+                continue
             found[f"{cls}:decision"][decision_id] += 1
         elif cls == "stale-context" and event_id is not None:
             found["stale-context:regression"][event_id] += 1
@@ -218,6 +247,8 @@ def evaluate(run_dir: str) -> dict:
             "applies": len(applies),
             "findings": len(findings),
             "maxInFlightMicros": max_in_flight // 1000,
+            "ambiguousDecisions": len(ambiguous),
+            "excludedFindings": excluded,
         },
         "anomalies": dict(anomalies),
         "categories": by_category,

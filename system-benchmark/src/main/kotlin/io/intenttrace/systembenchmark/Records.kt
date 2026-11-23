@@ -51,8 +51,8 @@ fun sha256Hex(digest: MessageDigest, value: String): String {
 }
 
 /** A JSONL log owned by one thread. Every thread writes its own file, so no locking is needed. */
-class JsonlLog(path: Path) : AutoCloseable {
-    private val writer: BufferedWriter = Files.newBufferedWriter(path).let { BufferedWriter(it, 1 shl 20) }
+class JsonlLog(path: Path, bufferChars: Int = 1 shl 20) : AutoCloseable {
+    private val writer: BufferedWriter = Files.newBufferedWriter(path).let { BufferedWriter(it, bufferChars) }
 
     fun write(vararg fields: Pair<String, Any?>) {
         writer.write(Json.encode(linkedMapOf(*fields)))
@@ -60,6 +60,17 @@ class JsonlLog(path: Path) : AutoCloseable {
     }
 
     override fun close() = writer.close()
+}
+
+/** The run's logs, so that every one is flushed and closed at the end, whichever thread opened it. */
+class LogRegistry(private val directory: Path, private val bufferChars: Int = 1 shl 20) : AutoCloseable {
+    private val logs = ArrayList<JsonlLog>()
+
+    fun open(name: String): JsonlLog = JsonlLog(directory.resolve(name), bufferChars).also { synchronized(logs) { logs += it } }
+
+    val size: Int get() = synchronized(logs) { logs.size }
+
+    override fun close() = synchronized(logs) { logs.forEach { it.close() } }
 }
 
 /** A growable array of primitive longs, for latency samples. */

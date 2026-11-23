@@ -24,6 +24,7 @@ import datetime
 import json
 import os
 import platform
+import re
 import shutil
 import statistics
 import subprocess
@@ -39,6 +40,10 @@ COMPOSE = os.path.join(ROOT, "system-benchmark", "compose.yaml")
 LAUNCHER = os.path.join(ROOT, "system-benchmark", "build", "install", "intenttrace-system-benchmark", "bin",
                         "intenttrace-system-benchmark")
 MODES = ("off", "on", "on-async")
+# Marks a directory this runner made. Only a marked directory is reused, and only the runner's own entries in it
+# are cleared, after the build has succeeded, so a mistyped --output or a failed build cannot destroy results.
+OUTPUT_MARKER = ".intenttrace-system-benchmark"
+SUMMARY_FILES = ("summary.json", "summary.md")
 MODE_LABELS = {"off": "Detector off", "on": "Inline checks", "on-async": "Off-path checks"}
 
 # (label, path into metrics.json, unit, whether lower is better)
@@ -243,15 +248,48 @@ def parse_args(argv: Optional[List[str]]) -> argparse.Namespace:
     return args
 
 
+RUN_DIRECTORY = re.compile(r"r[0-9]+-(?:" + "|".join(re.escape(mode) for mode in MODES) + r")")
+
+
+def run_directories(output: str) -> List[str]:
+    return sorted(name for name in os.listdir(output)
+                  if RUN_DIRECTORY.fullmatch(name) and os.path.isdir(os.path.join(output, name)))
+
+
+def check_output(output: str) -> Optional[str]:
+    """Why ``output`` cannot be used, or None. Nothing is changed."""
+    if not os.path.exists(output):
+        return None
+    if not os.path.isdir(output):
+        return f"{output} exists and is not a directory"
+    if os.listdir(output) and not os.path.exists(os.path.join(output, OUTPUT_MARKER)):
+        return (f"{output} is not empty and was not made by this runner; "
+                "choose a new or empty directory so nothing in it is deleted")
+    return None
+
+
+def clear_output(output: str) -> None:
+    """Remove the runs and summaries an earlier run of this script wrote, and nothing else."""
+    for name in run_directories(output):
+        shutil.rmtree(os.path.join(output, name))
+    for name in SUMMARY_FILES:
+        path = os.path.join(output, name)
+        if os.path.exists(path):
+            os.remove(path)
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
-    if os.path.exists(args.output):
-        shutil.rmtree(args.output)
-    os.makedirs(args.output)
+    problem = check_output(args.output)
+    if problem:
+        sys.exit(f"run_system_benchmark: {problem}")
     if not args.no_compose:
         run(["docker", "compose", "-f", COMPOSE, "up", "-d", "--wait"])
     gradlew = os.path.join(ROOT, "gradlew")
     run([gradlew, ":system-benchmark:installDist", "--no-daemon", "-q"])
+    os.makedirs(args.output, exist_ok=True)
+    clear_output(args.output)
+    open(os.path.join(args.output, OUTPUT_MARKER), "w").close()
 
     settings = {
         "repetitions": args.repetitions, "seed": args.seed, "users": args.users,
