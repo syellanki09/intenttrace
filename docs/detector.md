@@ -88,6 +88,10 @@ These are nine fixed synthetic cases. They show the checks behave as designed;
 they do not measure precision, recall, or overhead on real workloads. The
 contract unit-drift cases are not scored because no contract check exists.
 
+The [system benchmark](system-benchmark.md) measures cost and detection in a
+running Kafka and Redis data path under a synthetic workload, including the
+trade-off between inline and off-path decision checks.
+
 The existing scenario records keep `detected = null`. Their schemas are
 unchanged, and agreement is reported separately.
 

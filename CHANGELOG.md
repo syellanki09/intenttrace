@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Kafka and Redis backed synthetic system benchmark (`system-benchmark` module,
+  Docker Compose with pinned images). It runs the detector off, with inline
+  decision checks, and with off-path checks against the same seeded workload
+  and injected faults; measures decision latency, saturation throughput, CPU and
+  allocation per operation, oracle query time and retained heap; and scores
+  findings against ground truth that an independent evaluator derives from the
+  host's logs. CI runs a short smoke repetition.
+
 - Maven Central publication for `intenttrace-detector` and
   `intenttrace-detector-otel` under `io.github.syellanki09`, with sources, API
   documentation, complete POM metadata, reproducible archives and optional

@@ -72,7 +72,11 @@ OpenTelemetry publishing, with agreement against fixture ground truth.
 
 - Detector checks usable inside host systems without the harness
 - OpenTelemetry metrics and span events for findings
-- Measured precision, recall and overhead on realistic infrastructure
+- Measured precision, recall and overhead on realistic infrastructure (a
+  [synthetic Kafka and Redis benchmark](docs/system-benchmark.md) exists; real
+  workloads remain open)
+- A decision-recording call separate from the oracle check, so freshness checks
+  can run off the decision path without losing late-arrival detection
 - Contract-compatibility runtime checks
 - Durable or distributed replay and event-time tracking
 

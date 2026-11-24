@@ -15,5 +15,6 @@ include(
     "provenance",
     "benchmarks",
     "detector",
-    "detector-otel"
+    "detector-otel",
+    "system-benchmark"
 )

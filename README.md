@@ -53,7 +53,7 @@ The six classes are defined in the [failure taxonomy](docs/failure-taxonomy.md).
 | `conflicting-values` | Sources disagree and the conflict is resolved silently | Not yet | `ReplayGuard`, `FreshnessCheck` | No |
 | `contract-incompatibility` | Producer and consumer disagree on shape or meaning | [Contract unit drift](docs/contract-compatibility.md) | Not yet | No |
 
-The agreement run covers nine fixed synthetic cases, true negatives included, listed in the [detector guide](docs/detector.md). It shows the checks behave as designed; it does not measure production precision or recall.
+The agreement run covers nine fixed synthetic cases, true negatives included, listed in the [detector guide](docs/detector.md). The [system benchmark](docs/system-benchmark.md) then runs the detector in a Kafka and Redis data path under a seeded synthetic workload with injected faults, and scores its findings against ground truth derived independently from the host's logs. Both are synthetic; neither measures production precision or recall.
 
 ## Quick start
 
@@ -87,7 +87,7 @@ val detector = IntentTraceDetector(
 detector.checkDecision(ContextRead(requestId, userId, now, VersionStamp(read.version, read.committedAt)))
 ```
 
-These coordinates resolve once preview 2 is published to Maven Central. The [detector guide](docs/detector.md) covers every check, the OpenTelemetry output, and the limits. The [consumer example](examples/detector-consumer/README.md) is a complete service built only from the library artifacts, and CI builds it on every change. The detector is experimental and its API may change.
+In the [system benchmark](docs/system-benchmark.md), inline checks doubled median decision latency, almost all of it the oracle's Redis query, while off-path checks added 5% but missed more late arrivals. These coordinates resolve once preview 2 is published to Maven Central. The [detector guide](docs/detector.md) covers every check, the OpenTelemetry output, and the limits. The [consumer example](examples/detector-consumer/README.md) is a complete service built only from the library artifacts, and CI builds it on every change. The detector is experimental and its API may change.
 
 ## Experiments
 
@@ -119,6 +119,7 @@ provenance/            structured decision evidence and JSON serialization
 benchmarks/            executable scenarios, JSONL output and detector agreement
 detector/              runtime detector for host systems (no dependencies)
 detector-otel/         OpenTelemetry metrics and span events for detector findings
+system-benchmark/      Kafka and Redis backed synthetic benchmark of detector cost and detection
 examples/              outside consumer of the published detector artifacts
 tools/                 independent Python verifiers, suite runner and release tooling
 ```
