@@ -11,9 +11,11 @@ class DetectorAgreementTest {
         "test runtime", "17", "test OS", mapOf("sourceDirty" to "false"))
 
     private fun records() = detectorAgreementRecords(StaleContextScenario().run(metadata("stale-context")),
-        replayRecords(metadata("duplicate-replay")), eventTimeRecords(metadata("event-time-ordering")), "a".repeat(40))
+        replayRecords(metadata("duplicate-replay")), eventTimeRecords(metadata("event-time-ordering")),
+        missingContextRecords(metadata("missing-context")), conflictingValuesRecords(metadata("conflicting-values")),
+        "a".repeat(40))
 
-    @Test fun `runtime detector agrees with harness ground truth on every covered fixture`() {
+    @Test fun `runtime detector outcomes against harness ground truth on every covered fixture`() {
         val expected = listOf(
             listOf("stale-context", "control", "SATISFIED", "", "true-negative"),
             listOf("stale-context", "injected", "VIOLATED", "stale-context", "true-positive"),
@@ -23,7 +25,15 @@ class DetectorAgreementTest {
             listOf("event-time-ordering", "control", "SATISFIED", "", "true-negative"),
             listOf("event-time-ordering", "reordered-arrival", "VIOLATED", "stale-context", "true-positive"),
             listOf("event-time-ordering", "event-time-reconciliation", "SATISFIED", "", "true-negative"),
-            listOf("event-time-ordering", "late-arrival", "VIOLATED", "delayed-events", "true-positive")
+            listOf("event-time-ordering", "late-arrival", "VIOLATED", "delayed-events", "true-positive"),
+            listOf("missing-context", "control", "SATISFIED", "", "true-negative"),
+            listOf("missing-context", "silent-default", "VIOLATED", "missing-context", "true-positive"),
+            listOf("missing-context", "recorded-degradation", "SATISFIED", "missing-context", "detected-and-prevented"),
+            listOf("conflicting-values", "control", "SATISFIED", "", "true-negative"),
+            listOf("conflicting-values", "last-arrival-wins", "VIOLATED", "conflicting-values", "true-positive"),
+            listOf("conflicting-values", "recorded-resolution", "SATISFIED", "", "true-negative"),
+            // Known limit: the oracle compares versions, so a divergent value under the same version is missed.
+            listOf("conflicting-values", "same-version-divergence", "VIOLATED", "", "false-negative")
         )
         assertEquals(expected, records().map {
             listOf(it.family, it.caseId, it.groundTruthStatus.name, it.findingClassIds.joinToString(","), it.outcome)

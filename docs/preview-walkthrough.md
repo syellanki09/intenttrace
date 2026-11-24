@@ -56,7 +56,7 @@ The outer pack is not the stale-context ZIP format; use `tools/verify_bundle.py`
 
 ## Supported Scope and Feedback
 
-This pack covers stale-context selection and a fixed synthetic duration-contract mismatch. Separate commands demonstrate [duplicate replay](duplicate-replay.md) and [event-time ordering with late arrival](event-time-ordering.md). Missing/conflicting information remain future executable-scenario work. No general SDK compatibility proof, production integration, or prevalence claim is made.
+This pack covers stale-context selection and a fixed synthetic duration-contract mismatch. Separate commands demonstrate [duplicate replay](duplicate-replay.md), [event-time ordering with late arrival](event-time-ordering.md), [missing context](missing-context.md) and [conflicting values](conflicting-values.md). No general SDK compatibility proof, production integration, or prevalence claim is made.
 
 Try the walkthrough, inspect a violated record, and report the full source SHA, environment, exact command, and whether the result was understandable. Use the repository's **Reproduction failure** or **Usage feedback or suggestion** issue form. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed steps. Successful independent attempts are useful evidence too; report what you actually ran.
 

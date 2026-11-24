@@ -11,8 +11,8 @@ The workflow also runs when its own definition or this guide changes in a PR, an
 ## What It Checks
 
 - A clean Git checkout and an initially absent, isolated `GRADLE_USER_HOME`.
-- JDK 17 build, the full Kotlin test suite, and all four demonstrations.
-- Python regression tests, independent verification of all four JSONL formats, stale-context bundle verification, and a combined 12-case suite pack.
+- JDK 17 build, the full Kotlin test suite, and all six demonstrations.
+- Python regression tests, independent verification of all six JSONL formats, stale-context bundle verification, and a combined 19-case suite pack.
 - Evidence generation from the exact checked-out commit, without writing build logs into the working tree before metadata capture.
 
 There is deliberately no Gradle setup/cache-restoration action in this workflow. Wrapper distributions and dependencies must resolve into the fresh temporary Gradle home. This does not imply a network-free or fully hermetic build: it uses the hosted Ubuntu image, an available JDK, and public dependency services. Failures to download dependencies are reported as failures rather than evidence that the scenario ran.
@@ -23,4 +23,4 @@ A successful run retains `clean-preview-<workflow-sha>` for 30 days, containing 
 
 Failure diagnostics are retained separately for seven days when available; they are not labeled successful reproduction evidence. Inspect the job log if failure occurred before diagnostics could be created.
 
-The workflow uses the same `python3 tools/run_suite.py` command as the [suite walkthrough](scenario-suite.md), so all 12 cases receive independent verification here. No tag, citation date, DOI, or permanent archival artifact is created by this workflow.
+The workflow uses the same `python3 tools/run_suite.py` command as the [suite walkthrough](scenario-suite.md), so all 19 cases receive independent verification here. No tag, citation date, DOI, or permanent archival artifact is created by this workflow.

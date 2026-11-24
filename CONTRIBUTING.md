@@ -4,7 +4,7 @@ IntentTrace is an experimental clean-room research framework. Reproduction attem
 
 ## Try the Existing Scenarios
 
-For all four demonstrations and a verified 12-case bundle, run
+For all six demonstrations and a verified 19-case bundle, run
 `python3 tools/run_suite.py` from a clean checkout. The
 [suite walkthrough](docs/scenario-suite.md) explains outcomes and Python-only
 offline verification with `tools/verify_suite.py`.
@@ -22,6 +22,10 @@ python3 tools/verify_results.py benchmarks/build/results/stale-context/results.j
 python3 tools/verify_replay_results.py benchmarks/build/results/duplicate-replay/results.jsonl
 ./gradlew :benchmarks:runEventTimeScenario --no-daemon
 python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-ordering/results.jsonl
+./gradlew :benchmarks:runMissingContextScenario --no-daemon
+python3 tools/verify_missing_context_results.py benchmarks/build/results/missing-context/results.jsonl
+./gradlew :benchmarks:runConflictingValuesScenario --no-daemon
+python3 tools/verify_conflicting_values_results.py benchmarks/build/results/conflicting-values/results.jsonl
 ```
 
 Record the source commit, commands, runtime, and observed results. The stale-context pair should evaluate SATISFIED then VIOLATED; the contract demonstration should show a compatible upgrade and two unit-drift violations. Detection observations remain unknown, not successful detection. Consult the documentation at the exact revision you tested for the supported output formats.
@@ -34,8 +38,9 @@ Record the source commit, commands, runtime, and observed results. The stale-con
 | Contract compatibility | Synthetic duration-unit comparison and producer/consumer demonstration; see revision-specific contract docs for output support |
 | Duplicate replay | [Fixed replay/idempotency scenario](docs/duplicate-replay.md), event-level JSONL evidence, and independent verification |
 | Event-time ordering and delayed events | [Fixed ordering/reconciliation/late-arrival scenario](docs/event-time-ordering.md), three-clock provenance, JSONL, and independent verification |
-| Missing/conflicting information | Taxonomy and selected decision semantics; no complete executable benchmark for these classes |
-| System detection | No independent detector is implemented; null observations remain unknown |
+| Missing context | [Fixed silent-default/recorded-degradation scenario](docs/missing-context.md), JSONL evidence, and independent verification |
+| Conflicting values | [Fixed last-arrival/recorded-resolution scenario](docs/conflicting-values.md), per-source observations, JSONL, and independent verification |
+| System detection | Experimental [runtime detector](docs/detector.md) with a separate agreement run on fixed fixtures; scenario records keep `detected = null` |
 | Releases and archival identifiers | Preview preparation; use actual published repository metadata rather than assuming a tagged release or DOI |
 
 ## Give Feedback

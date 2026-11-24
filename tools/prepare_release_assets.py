@@ -34,8 +34,8 @@ def prepare_release_assets(suite, destination, source_commit):
         snapshot = assets / "suite.zip"
         shutil.copyfile(suite, snapshot)
         report = verify_suite(snapshot)
-        if not exact_integer(report["suiteReportVersion"], 2):
-            raise ValueError("Release attachments require an indexed version-2 suite report")
+        if not exact_integer(report["suiteReportVersion"], 3):
+            raise ValueError("Release attachments require a complete version-3 suite report")
         if report["sourceCommitSha"] != source_commit:
             raise ValueError("Suite source does not match the expected release commit")
         with zipfile.ZipFile(snapshot) as archive:

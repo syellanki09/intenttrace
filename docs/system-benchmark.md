@@ -4,7 +4,7 @@
 runtime detector behaves, and what it costs, under a controlled workload with known faults. It is
 not production validation, and its numbers do not predict overhead or accuracy in any real system.
 
-The [agreement run](detector.md#agreement-with-ground-truth) checks the detector on nine fixed
+The [agreement run](detector.md#agreement-with-ground-truth) checks the detector on 16 fixed
 cases. This benchmark puts the same detector in a running data path, with a real broker and a real
 store, and asks two questions:
 

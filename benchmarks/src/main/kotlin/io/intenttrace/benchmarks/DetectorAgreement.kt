@@ -8,7 +8,9 @@ import io.intenttrace.detector.IntentTraceDetector
 import io.intenttrace.detector.ReplayGuard
 import io.intenttrace.detector.VersionStamp
 import io.intenttrace.evaluation.InvariantStatus
+import io.intenttrace.provenance.ConflictingValuesProvenanceRecord
 import io.intenttrace.provenance.EventTimeProvenanceRecord
+import io.intenttrace.provenance.MissingContextProvenanceRecord
 import io.intenttrace.provenance.ProvenanceRecord
 import io.intenttrace.provenance.ReplayProvenanceRecord
 import io.intenttrace.provenance.ReproductionMetadata
@@ -49,14 +51,17 @@ internal fun agreementOutcome(status: InvariantStatus, detected: Boolean, preven
 private val fixedClock: Clock = Clock.fixed(Instant.parse("2026-01-01T00:10:00Z"), ZoneOffset.UTC)
 
 /**
- * Runs the detector over the stale-context, duplicate-replay and event-time
- * fixtures. Contract unit drift is not covered: the detector has no contract
- * check yet, so those cases are left out rather than scored.
+ * Runs the detector over the stale-context, duplicate-replay, event-time,
+ * missing-context and conflicting-values fixtures. Contract unit drift is not
+ * covered: the detector has no contract check yet, so those cases are left out
+ * rather than scored.
  */
 fun detectorAgreementRecords(
     stale: List<ProvenanceRecord>,
     replay: List<ReplayProvenanceRecord>,
     eventTime: List<EventTimeProvenanceRecord>,
+    missing: List<MissingContextProvenanceRecord>,
+    conflicting: List<ConflictingValuesProvenanceRecord>,
     sourceCommitSha: String
 ): List<DetectorAgreementRecord> {
     fun record(family: String, caseId: String, status: InvariantStatus, classes: List<String>, prevented: Boolean) =
@@ -110,7 +115,33 @@ fun detectorAgreementRecords(
         record("event-time-ordering", provenance.caseId, provenance.status, sink.findings().map { it.failureClassId },
             prevented = false)
     }
-    return staleRecords + replayRecords + eventTimeRecords
+    val missingRecords = missing.map { provenance ->
+        val sink = CollectingFindingSink()
+        // The tier store's commit log is the oracle; the decision path reports what its read returned.
+        val required = VersionStamp(provenance.required.version, provenance.required.committedAt)
+        val detector = IntentTraceDetector(listOf(sink), freshness = FreshnessCheck({ _, _ -> required }),
+            clock = fixedClock)
+        detector.checkDecision(ContextRead("${provenance.caseId}-decision", provenance.contextKey, provenance.decidedAt,
+            provenance.delivered?.let { VersionStamp(it.version, it.committedAt) }))
+        // The detector cannot see the host's degradation record, so a recorded fallback is still reported.
+        record("missing-context", provenance.caseId, provenance.status, sink.findings().map { it.failureClassId },
+            prevented = provenance.degradation != null)
+    }
+
+    val conflictingRecords = conflicting.map { provenance ->
+        val sink = CollectingFindingSink()
+        // The primary store is the oracle; the decision path reports the version it actually used.
+        val primary = provenance.observations.single { it.source == "primary" }
+        val used = provenance.observations.single { it.source == provenance.usedSource }
+        val detector = IntentTraceDetector(listOf(sink),
+            freshness = FreshnessCheck({ _, _ -> VersionStamp(primary.version, primary.committedAt) }),
+            clock = fixedClock)
+        detector.checkDecision(ContextRead("${provenance.caseId}-decision", provenance.factKey, provenance.decidedAt,
+            VersionStamp(used.version, used.committedAt)))
+        record("conflicting-values", provenance.caseId, provenance.status, sink.findings().map { it.failureClassId },
+            prevented = provenance.resolution != null)
+    }
+    return staleRecords + replayRecords + eventTimeRecords + missingRecords + conflictingRecords
 }
 
 object DetectorAgreementMain {
@@ -135,7 +166,9 @@ object DetectorAgreementMain {
             "${System.getProperty("os.name")} ${System.getProperty("os.version")} ${System.getProperty("os.arch")}",
             emptyMap())
         val records = detectorAgreementRecords(StaleContextScenario().run(metadata("stale-context")),
-            replayRecords(metadata("duplicate-replay")), eventTimeRecords(metadata("event-time-ordering")), commit)
+            replayRecords(metadata("duplicate-replay")), eventTimeRecords(metadata("event-time-ordering")),
+            missingContextRecords(metadata("missing-context")), conflictingValuesRecords(metadata("conflicting-values")),
+            commit)
         val output = Path.of(options["--output"] ?: "benchmarks/build/results/detector-agreement/results.jsonl")
             .toAbsolutePath().normalize()
         Files.createDirectories(output.parent)
