@@ -14,6 +14,9 @@ authorize a tag, release, archival deposit, or external outreach.
   ([run](https://github.com/syellanki09/intenttrace/actions/runs/44032733778));
   rerun it for the final SHA.
 - Baseline checks do not validate later metadata or documentation commits.
+- That baseline runs four families and 12 cases. The six-family, 19-case suite
+  and the 16-case agreement run arrived later with the missing-context and
+  conflicting-values scenarios, so validate those counts on the final source.
 
 ## Settle Metadata Before Final Validation
 
