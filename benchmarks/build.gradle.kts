@@ -61,3 +61,25 @@ tasks.register<JavaExec>("runDetectorAgreement") {
         languageVersion.set(JavaLanguageVersion.of(17))
     })
 }
+
+tasks.register<JavaExec>("runMissingContextScenario") {
+    workingDir(rootProject.projectDir)
+    group = "application"
+    description = "Run the synthetic missing-context and recorded-degradation demonstration"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.intenttrace.benchmarks.MissingContextMain")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}
+
+tasks.register<JavaExec>("runConflictingValuesScenario") {
+    workingDir(rootProject.projectDir)
+    group = "application"
+    description = "Run the synthetic conflicting-values and recorded-resolution demonstration"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.intenttrace.benchmarks.ConflictingValuesMain")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}

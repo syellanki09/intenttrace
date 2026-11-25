@@ -92,11 +92,22 @@ harness logical history. Reordered selection is classified as stale context;
 latest state arriving too late is classified as delayed events. The Python
 verifier recomputes selection and evaluation from the recorded timeline.
 
-The [complete scenario suite](scenario-suite.md) executes the four implemented
-demonstrations and independently verifies all 12 results. Its versioned suite
+The [missing-context demonstration](missing-context.md) injects an empty read
+from a healthy-looking source. `MissingContextInvariant` accepts a decision that
+used the delivered value, or one that fell back to a default and recorded which
+source failed; a silent default violates it. The
+[conflicting-values demonstration](conflicting-values.md) gives one fact two
+sources in a fixed arrival order. `ConflictingValuesInvariant` treats any value
+difference as a conflict and accepts it only when a recorded rule selected the
+source the decision used. Each has its own provenance record and an
+independent Python verifier.
+
+The [complete scenario suite](scenario-suite.md) executes the six implemented
+demonstrations and independently verifies all 19 results. Its versioned suite
 report combines summaries only after checking common clean-source and runtime
-identity. A suite ZIP nests the compatible five-case preview alongside replay
-and event-time JSONL; the offline suite verifier validates each format.
+identity. A suite ZIP nests the compatible five-case preview alongside the
+replay, event-time, missing-context and conflicting-values JSONL; the offline
+suite verifier validates each format.
 
 ## Scenario contract
 

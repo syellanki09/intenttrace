@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Executable missing-context and conflicting-values demonstrations, so every
+  taxonomy class has at least one fixed synthetic scenario. Missing context
+  compares a delivered value, a silent default after an empty read, and a
+  recorded degradation; conflicting values compares agreeing sources, silent
+  last-arrival picks of a newer or same-version divergent value, and a recorded
+  prefer-primary rule. Each has its own invariant, provenance schema, Python
+  verifier, CI job and guide. The suite now runs six families and 19 cases,
+  with suite report 3 and manifest schema 2; earlier suites remain verifiable.
+  The detector-agreement run covers 16 cases and records one known false
+  negative, a divergent value under the same version.
+
 - Kafka and Redis backed synthetic system benchmark (`system-benchmark` module,
   Docker Compose with pinned images). It runs the detector off, with inline
   decision checks, and with off-path checks against the same seeded workload
@@ -25,7 +36,7 @@
   regression and late-arrival detection. A `detector-otel` module publishes
   findings as a bounded-cardinality OpenTelemetry counter and span events, and
   a JSONL sink writes deterministic records. A detector-agreement runner
-  compares findings with harness ground truth on nine covered fixture cases;
+  compares findings with harness ground truth on 16 covered fixture cases;
   existing scenario schemas and `detected = null` values are unchanged.
 
 - Verified release-attachment preparation from an explicitly selected source,

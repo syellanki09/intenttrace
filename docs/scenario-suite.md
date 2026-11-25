@@ -7,7 +7,7 @@ python3 tools/run_suite.py
 ```
 
 The first build needs network access for Gradle and dependencies. The command
-runs the full Kotlin and Python suites, executes all four demonstrations, checks
+runs the full Kotlin and Python suites, executes all six demonstrations, checks
 their evidence independently, and prints the location of a new
 `build/suite/COMMIT-RUN/suite.zip` and `suite-report.json`. Each run gets a unique
 directory. The working tree and commit must remain unchanged during execution.
@@ -33,8 +33,10 @@ Output from every subprocess is streamed to the terminal and retained in
 | Duration contract | Coordinated upgrade, unit drift, same-version drift | SATISFIED, VIOLATED, VIOLATED |
 | Duplicate replay | Control, naive replay, deduplicated replay | SATISFIED, VIOLATED, SATISFIED |
 | Event time | Control, reordered arrival, reconciliation, late arrival | SATISFIED, VIOLATED, SATISFIED, VIOLATED |
+| Missing context | Control, silent default, recorded degradation | SATISFIED, VIOLATED, SATISFIED |
+| Conflicting values | Control, last arrival wins, recorded resolution, same-version divergence | SATISFIED, VIOLATED, SATISFIED, VIOLATED |
 
-All 12 `detected` observations remain null. The harness evaluates synthetic ground
+All 19 `detected` observations remain null. The harness evaluates synthetic ground
 truth; it does not implement a system detector. The report preserves individual
 case statuses and failure classes where present instead of turning violations
 into a detection rate.
@@ -50,10 +52,10 @@ python3 tools/verify_suite.py /path/to/suite.zip
 
 The archive contains:
 
-- `manifest.json`: manifest schema version 1, full source SHA, clean-source flag,
+- `manifest.json`: manifest schema version 2, full source SHA, clean-source flag,
   deterministic scenario order, canonical failure IDs, verification status,
   raw JSONL paths, independently counted records, and SHA-256 hashes.
-- `suite-report.json`: suite report version 2, exact source SHA, runtime, and all
+- `suite-report.json`: suite report version 3, exact source SHA, runtime, and all
   per-case summaries, plus SHA-256 hashes and byte counts for evidence files.
 - `stale-context.jsonl` and `contract-unit-drift.jsonl`: the original five raw
   records, also preserved byte-for-byte inside the preview ZIP.
@@ -62,6 +64,10 @@ The archive contains:
 - `duplicate-replay.jsonl`: three replay cases and delivery/application evidence.
 - `event-time-ordering.jsonl`: four ordering/late-arrival cases with event,
   ingestion, and decision timestamps.
+- `missing-context.jsonl`: three missing-context cases with the required and
+  delivered snapshots, the used value, and any degradation record.
+- `conflicting-values.jsonl`: four conflicting-values cases with every source
+  observation in arrival order, the used source, and any resolution record.
 - `build.log`: output of the build, scenario tasks, and Python tests when generated
   by the suite runner.
 - `README.txt`: source identity, reproduction command, and limitations.
@@ -72,7 +78,9 @@ checksums, false summaries, inconsistent scenario evidence, mixed commits,
 dirty-source evidence, and mixed runtime metadata. It reads known filenames
 without extracting archive paths and limits each member to 16 MiB. The nested
 preview verifier checks its own format and evidence. The suite verifier also
-continues to read earlier version-1 suite reports without a manifest.
+continues to read earlier four-scenario suites: version-2 reports with a
+version-1 manifest, and version-1 reports without a manifest. Release
+attachments require a version-3 suite.
 
 Archive member order, timestamps, and permissions are stable. Identical evidence
 and logs produce identical ZIP bytes. Runtime details and build logs can differ
@@ -102,8 +110,8 @@ days. See the [candidate checklist](releases/preview-2-review.md) for final-sour
 review and publication requirements.
 
 The suite uses existing fixed demonstrations. It does not add production
-integrations, durable processing guarantees, missing/conflicting-information
-benchmarks, or detection claims. See the individual scenario guides for their
+integrations, durable processing guarantees, or detection claims; detector
+agreement is reported separately by `:benchmarks:runDetectorAgreement`. See the individual scenario guides for their
 assumptions. The five-case `run_preview.py` and `verify_preview.py` commands and
 published preview artifacts retain their formats; the complete suite is a
 separate bundle with its own versioned report.

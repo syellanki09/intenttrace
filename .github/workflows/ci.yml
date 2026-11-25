@@ -66,6 +66,32 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Run and verify missing-context demonstration
+        run: |
+          ./gradlew :benchmarks:runMissingContextScenario --no-daemon
+          python3 tools/verify_missing_context_results.py benchmarks/build/results/missing-context/results.jsonl
+
+      - name: Retain missing-context evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: missing-context-${{ github.sha }}
+          path: benchmarks/build/results/missing-context/results.jsonl
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Run and verify conflicting-values demonstration
+        run: |
+          ./gradlew :benchmarks:runConflictingValuesScenario --no-daemon
+          python3 tools/verify_conflicting_values_results.py benchmarks/build/results/conflicting-values/results.jsonl
+
+      - name: Retain conflicting-values evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: conflicting-values-${{ github.sha }}
+          path: benchmarks/build/results/conflicting-values/results.jsonl
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Compare detector findings with fixture ground truth
         run: ./gradlew :benchmarks:runDetectorAgreement --no-daemon
 

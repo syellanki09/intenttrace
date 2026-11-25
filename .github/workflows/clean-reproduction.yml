@@ -14,6 +14,9 @@ on:
       - tools/test_suite.py
       - tools/test_run_suite.py
       - tools/test_verify_suite.py
+      - tools/fixed_scenario.py
+      - tools/verify_missing_context_results.py
+      - tools/verify_conflicting_values_results.py
       - tools/prepare_release_assets.py
       - tools/test_prepare_release_assets.py
       - docs/scenario-suite.md
@@ -31,6 +34,9 @@ on:
       - tools/test_suite.py
       - tools/test_run_suite.py
       - tools/test_verify_suite.py
+      - tools/fixed_scenario.py
+      - tools/verify_missing_context_results.py
+      - tools/verify_conflicting_values_results.py
       - tools/prepare_release_assets.py
       - tools/test_prepare_release_assets.py
       - docs/scenario-suite.md

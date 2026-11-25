@@ -46,6 +46,11 @@ arrival-order processing, event-time reconciliation, and an event arriving after
 the decision boundary, with three-clock evidence and independent verification.
 Durable replay handling, watermarks, and repair of published decisions remain planned.
 
+Also implemented: fixed [missing-context](docs/missing-context.md) and
+[conflicting-values](docs/conflicting-values.md) demonstrations, so each
+taxonomy class now has at least one executable synthetic scenario. Timeouts,
+partial payloads, more than two sources and other resolution rules remain planned.
+
 - Event-time vs processing-time scenarios
 - Delayed/out-of-order events
 - Duplicate/replayed information
@@ -53,8 +58,8 @@ Durable replay handling, watermarks, and repair of published decisions remain pl
 
 ## Milestone 5 - External reproduction and extensibility
 
-Implemented: a [complete scenario suite](docs/scenario-suite.md) runs all four
-demonstrations and packages 12 independently verified cases in one command,
+Implemented: a [complete scenario suite](docs/scenario-suite.md) runs all six
+demonstrations and packages 19 independently verified cases in one command,
 with a combined report and Python-only offline verification.
 Its [consolidated reference results](docs/reference-results.md) summarize the
 implemented experiments. An explicit raw-evidence manifest indexes record counts,

@@ -1,4 +1,4 @@
-"""Build, run, and independently verify all four IntentTrace demonstrations."""
+"""Build, run, and independently verify all six IntentTrace demonstrations."""
 
 import argparse
 import hashlib
@@ -57,7 +57,7 @@ def verify_scenario(scenario, path):
         raise ValueError(f"{scenario}: verification failed: {error}") from error
 
 
-def collect_suite(stale, contract, replay, events, destination, source_commit):
+def collect_suite(stale, contract, replay, events, missing, conflicting, destination, source_commit):
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     collect_preview(stale, contract, destination / "preview", source_commit)
@@ -68,15 +68,18 @@ def collect_suite(stale, contract, replay, events, destination, source_commit):
     deterministic_zip(preview_path, preview_files)
     for source, name in [(preview_path, "preview.zip"), (stale, "stale-context.jsonl"),
                          (contract, "contract-unit-drift.jsonl"),
-                         (replay, "duplicate-replay.jsonl"), (events, "event-time-ordering.jsonl")]:
+                         (replay, "duplicate-replay.jsonl"), (events, "event-time-ordering.jsonl"),
+                         (missing, "missing-context.jsonl"), (conflicting, "conflicting-values.jsonl")]:
         shutil.copyfile(source, destination / name)
     manifest = verified_manifest(destination)
     (destination / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report = verified_suite_summary(destination / "preview.zip", destination / "duplicate-replay.jsonl",
-                                    destination / "event-time-ordering.jsonl")
-    report["suiteReportVersion"] = 2
+                                    destination / "event-time-ordering.jsonl", destination / "missing-context.jsonl",
+                                    destination / "conflicting-values.jsonl")
+    report["suiteReportVersion"] = 3
     files = ["manifest.json", "preview.zip", "stale-context.jsonl", "contract-unit-drift.jsonl",
-             "duplicate-replay.jsonl", "event-time-ordering.jsonl"]
+             "duplicate-replay.jsonl", "event-time-ordering.jsonl", "missing-context.jsonl",
+             "conflicting-values.jsonl"]
     if (destination / "build.log").is_file():
         files.append("build.log")
     report["files"] = {name: {"sha256": hashlib.sha256((destination / name).read_bytes()).hexdigest(),
@@ -86,7 +89,7 @@ def collect_suite(stale, contract, replay, events, destination, source_commit):
         f"IntentTrace synthetic scenario suite\nSource: {source_commit}\n"
         "Run from a clean checkout with JDK 17 and Python 3.9+: python3 tools/run_suite.py\n"
         "Verify offline with Python only: python3 tools/verify_suite.py suite.zip\n"
-        "manifest.json indexes all four raw JSONL files with record counts and SHA-256 hashes.\n"
+        "manifest.json indexes all six raw JSONL files with record counts and SHA-256 hashes.\n"
         "preview.zip preserves the original five-case format.\n"
         "All detection observations remain unknown. Checksums establish consistency, not authenticity.\n"
         "Runtime metadata and logs can vary between reproductions.\n", encoding="utf-8")
@@ -127,7 +130,9 @@ def run_suite(repository, package_only=False, release_assets=None):
                 for task, scenario in [(":benchmarks:run", "stale-context"),
                                        (":benchmarks:runContractScenario", "contract-unit-drift"),
                                        (":benchmarks:runReplayScenario", "duplicate-replay"),
-                                       (":benchmarks:runEventTimeScenario", "event-time-ordering")]:
+                                       (":benchmarks:runEventTimeScenario", "event-time-ordering"),
+                                       (":benchmarks:runMissingContextScenario", "missing-context"),
+                                       (":benchmarks:runConflictingValuesScenario", "conflicting-values")]:
                     run_logged([str(gradle), task, "--no-daemon"], repository, log, scenario)
                     verify_scenario(scenario, results / scenario / "results.jsonl")
                 run_logged([sys.executable, "-m", "unittest", "discover", "-s", "tools", "-p", "test_*.py"],
@@ -136,6 +141,7 @@ def run_suite(repository, package_only=False, release_assets=None):
             raise ValueError("Source changed during suite reproduction")
         report = collect_suite(results / "stale-context/results.jsonl", results / "contract-unit-drift/results.jsonl",
                                results / "duplicate-replay/results.jsonl", results / "event-time-ordering/results.jsonl",
+                               results / "missing-context/results.jsonl", results / "conflicting-values/results.jsonl",
                                destination, source)
         if assets is not None:
             prepare_release_assets(destination / "suite.zip", assets, source)
@@ -148,7 +154,9 @@ def run_suite(repository, package_only=False, release_assets=None):
         raise
     for scenario, cases in report["scenarios"].items():
         print(f"{scenario}: " + ", ".join(row["status"] for row in cases))
-    print("Verified 12 synthetic cases. Detection observations remain unknown.")
+    cases = sum(len(rows) for rows in report["scenarios"].values())
+    print(f"Verified {cases} synthetic cases across {len(report['scenarios'])} scenarios. "
+          "Detection observations remain unknown.")
     print(f"Suite: {destination / 'suite.zip'}")
     print(f"Summary: {destination / 'suite-report.json'}")
     print(f"Manifest: {destination / 'manifest.json'}")

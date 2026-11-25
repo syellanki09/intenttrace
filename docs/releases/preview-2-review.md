@@ -14,6 +14,9 @@ authorize a tag, release, archival deposit, or external outreach.
   ([run](https://github.com/syellanki09/intenttrace/actions/runs/44032733778));
   rerun it for the final SHA.
 - Baseline checks do not validate later metadata or documentation commits.
+- That baseline runs four families and 12 cases. The six-family, 19-case suite
+  and the 16-case agreement run arrived later with the missing-context and
+  conflicting-values scenarios, so validate those counts on the final source.
 
 ## Settle Metadata Before Final Validation
 
@@ -48,8 +51,8 @@ python3 tools/verify_suite.py /path/to/run/suite.zip
 
 - [ ] Full Kotlin and Python suites pass; record actual test counts from the logs.
 - [ ] Manifest source is the full final SHA and `sourceDirty` is the JSON boolean
-  `false`. All four independent verifiers pass.
-- [ ] Raw record counts are 2, 3, 3, and 4 in the manifest's scenario order.
+  `false`. All six independent verifiers pass.
+- [ ] Raw record counts are 2, 3, 3, 4, 3, and 4 in the manifest's scenario order.
 - [ ] All expected statuses match the draft notes and all detection values are null.
 - [ ] Run a second reproduction from that same clean source. Compare raw evidence,
   manifests, and logical results; allow environment metadata and logs to vary.
@@ -75,7 +78,7 @@ python3 tools/prepare_release_assets.py /path/to/run/suite.zip \
   --source-commit FULL_FINAL_SHA --output /path/to/new/attachments
 ```
 
-The tool independently verifies all 12 cases, requires indexed suite report 2,
+The tool independently verifies all 19 cases, requires complete suite report 3,
 checks the source SHA, preserves the original ZIP and its exact manifest/report
 bytes, and generates `SHA256SUMS`. It creates the new attachment directory only
 after validation succeeds and refuses to overwrite an existing directory. It does

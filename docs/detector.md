@@ -68,7 +68,8 @@ version 1) for systems without OpenTelemetry.
 ## Agreement with ground truth
 
 `./gradlew :benchmarks:runDetectorAgreement --no-daemon` runs the detector over
-the existing stale-context, duplicate-replay and event-time fixtures, giving it
+the stale-context, duplicate-replay, event-time, missing-context and
+conflicting-values fixtures, giving it
 only what a host would see, and writes one record per case to
 `benchmarks/build/results/detector-agreement/results.jsonl`.
 
@@ -83,10 +84,26 @@ only what a host would see, and writes one record per case to
 | event-time-ordering | reordered-arrival | VIOLATED | stale-context | true positive |
 | event-time-ordering | event-time-reconciliation | SATISFIED | none | true negative |
 | event-time-ordering | late-arrival | VIOLATED | delayed-events | true positive |
+| missing-context | control | SATISFIED | none | true negative |
+| missing-context | silent-default | VIOLATED | missing-context | true positive |
+| missing-context | recorded-degradation | SATISFIED | missing-context | detected and prevented |
+| conflicting-values | control | SATISFIED | none | true negative |
+| conflicting-values | last-arrival-wins | VIOLATED | conflicting-values | true positive |
+| conflicting-values | recorded-resolution | SATISFIED | none | true negative |
+| conflicting-values | same-version-divergence | VIOLATED | none | false negative |
 
-These are nine fixed synthetic cases. They show the checks behave as designed;
+These are 16 fixed synthetic cases. They show the checks behave as designed;
 they do not measure precision, recall, or overhead on real workloads. The
 contract unit-drift cases are not scored because no contract check exists.
+
+Two outcomes need a note. In `recorded-degradation` the host already recorded
+that it fell back to a default, but the detector cannot see that record, so it
+reports the missing read; the run labels this `detected-and-prevented`, as it
+does for the idempotent replay. In `same-version-divergence` the cache holds a
+different value under the primary's own version. `FreshnessCheck` compares
+versions, not values, so it reports nothing, and the run keeps that as a false
+negative. See [missing context](missing-context.md) and
+[conflicting values](conflicting-values.md).
 
 The [system benchmark](system-benchmark.md) measures cost and detection in a
 running Kafka and Redis data path under a synthetic workload, including the
@@ -117,6 +134,9 @@ unchanged, and agreement is reported separately.
   report a late arrival that its first delivery did not have.
 - Timestamps that fall after the decision, from the read or the oracle, are
   reported as suspected `conflicting-values` findings rather than thrown.
+- `FreshnessCheck` compares versions only. Two sources that report different
+  values under the same version are not detected; `ReplayGuard` catches a
+  different payload only when it arrives under a repeated event identity.
 - State is in memory and per process. Durable or distributed tracking is not
   implemented.
 - A sink or check that throws, such as an oracle whose database is down, is

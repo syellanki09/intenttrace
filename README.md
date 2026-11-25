@@ -47,13 +47,13 @@ The six classes are defined in the [failure taxonomy](docs/failure-taxonomy.md).
 | Class | What goes wrong | Executable scenario | Runtime check | In agreement run |
 | --- | --- | --- | --- | --- |
 | `stale-context` | Decision uses superseded context | [Stale context](docs/reference-results.md), [event-time ordering](docs/event-time-ordering.md) | `FreshnessCheck`, `EventTimeMonitor` | Yes |
-| `missing-context` | Expected context absent; defaults used | Not yet | `FreshnessCheck` | No |
+| `missing-context` | Expected context absent; defaults used | [Missing context](docs/missing-context.md) | `FreshnessCheck` | Yes |
 | `delayed-events` | Context arrives after the decision that needed it | [Event-time ordering](docs/event-time-ordering.md) | `EventTimeMonitor` | Yes |
 | `duplicate-replay` | The same event is applied more than once | [Duplicate replay](docs/duplicate-replay.md) | `ReplayGuard` | Yes |
-| `conflicting-values` | Sources disagree and the conflict is resolved silently | Not yet | `ReplayGuard`, `FreshnessCheck` | No |
+| `conflicting-values` | Sources disagree and the conflict is resolved silently | [Conflicting values](docs/conflicting-values.md) | `ReplayGuard`, `FreshnessCheck` | Yes, version disagreements only |
 | `contract-incompatibility` | Producer and consumer disagree on shape or meaning | [Contract unit drift](docs/contract-compatibility.md) | Not yet | No |
 
-The agreement run covers nine fixed synthetic cases, true negatives included, listed in the [detector guide](docs/detector.md). The [system benchmark](docs/system-benchmark.md) then runs the detector in a Kafka and Redis data path under a seeded synthetic workload with injected faults, and scores its findings against ground truth derived independently from the host's logs. Both are synthetic; neither measures production precision or recall.
+The agreement run covers 16 fixed synthetic cases, true negatives included, listed in the [detector guide](docs/detector.md). It records one known miss: two sources that disagree on a value under the same version, which a version comparison cannot see. The [system benchmark](docs/system-benchmark.md) then runs the detector in a Kafka and Redis data path under a seeded synthetic workload with injected faults, and scores its findings against ground truth derived independently from the host's logs. Both are synthetic; neither measures production precision or recall.
 
 ## Quick start
 
@@ -64,7 +64,7 @@ python3 tools/run_suite.py
 ./gradlew :benchmarks:runDetectorAgreement --no-daemon
 ```
 
-The first command builds and tests the project, runs all four experiment families, independently verifies their 12 case results, and prints the location of `suite.zip` and a JSON summary under `build/suite/`. The second compares detector findings with ground truth. See the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents, and offline verification.
+The first command builds and tests the project, runs all six experiment families, independently verifies their 19 case results, and prints the location of `suite.zip` and a JSON summary under `build/suite/`. The second compares detector findings with ground truth. See the [suite walkthrough](docs/scenario-suite.md) for outcomes, archive contents, and offline verification.
 
 For the published `v0.1.0-preview.1`, check out that tag and use its five-case `python3 tools/run_preview.py` command.
 
@@ -97,6 +97,8 @@ In the [system benchmark](docs/system-benchmark.md), inline checks doubled media
 | [Contract unit drift](docs/contract-compatibility.md) | 3 | SATISFIED, VIOLATED, VIOLATED | `./gradlew :benchmarks:runContractScenario` | `tools/verify_contract_results.py` |
 | [Duplicate replay](docs/duplicate-replay.md) | 3 | SATISFIED, VIOLATED, SATISFIED | `./gradlew :benchmarks:runReplayScenario` | `tools/verify_replay_results.py` |
 | [Event-time ordering](docs/event-time-ordering.md) | 4 | SATISFIED, VIOLATED, SATISFIED, VIOLATED | `./gradlew :benchmarks:runEventTimeScenario` | `tools/verify_event_time_results.py` |
+| [Missing context](docs/missing-context.md) | 3 | SATISFIED, VIOLATED, SATISFIED | `./gradlew :benchmarks:runMissingContextScenario` | `tools/verify_missing_context_results.py` |
+| [Conflicting values](docs/conflicting-values.md) | 4 | SATISFIED, VIOLATED, SATISFIED, VIOLATED | `./gradlew :benchmarks:runConflictingValuesScenario` | `tools/verify_conflicting_values_results.py` |
 
 Each verifier takes the JSONL file its run writes under `benchmarks/build/results/`. Every record carries context evidence, the full source commit, whether the tree was dirty, and `detected: null`, because benchmark ground truth is recorded separately from detection. Repeated runs on the same checkout produce identical results. The [consolidated reference results](docs/reference-results.md) give invariants, inputs, comparisons, and limitations, and the [reproduction guide](docs/reproduction.md) covers clean-checkout verification, CI evidence bundles, and offline archive checks.
 
@@ -128,7 +130,7 @@ See the [architecture notes](docs/architecture.md) for each component and the [r
 
 ## Status
 
-Experimental preview under active development. Four experiment families with 12 cases and the runtime detector are implemented and verified in CI. Executable scenarios for missing context and conflicting values, and a runtime contract check, are not yet implemented. No external adoption or third-party use is claimed.
+Experimental preview under active development. Six experiment families with 19 cases, one fixed synthetic scenario for each taxonomy class, and the runtime detector are implemented and verified in CI. A runtime contract check is not yet implemented. No external adoption or third-party use is claimed.
 
 ## Releases and citation
 

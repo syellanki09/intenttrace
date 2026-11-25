@@ -23,7 +23,9 @@ class SuiteExecutionTest(unittest.TestCase):
             results = Path(directory) / "benchmarks/build/results"
             for source, name in [(fixture.preview.stale.source, "stale-context"),
                                  (fixture.preview.contract_path, "contract-unit-drift"),
-                                 (fixture.replay.path, "duplicate-replay"), (fixture.events.path, "event-time-ordering")]:
+                                 (fixture.replay.path, "duplicate-replay"), (fixture.events.path, "event-time-ordering"),
+                                 (fixture.missing.path, "missing-context"),
+                                 (fixture.conflicting.path, "conflicting-values")]:
                 target = results / name / "results.jsonl"
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
@@ -31,7 +33,7 @@ class SuiteExecutionTest(unittest.TestCase):
                  patch("run_suite.run_logged") as execute:
                 destination = run_suite(directory, package_only=True, release_assets=Path("build/release-assets"))
                 execute.assert_not_called()
-            self.assertEqual(2, verify_suite(destination / "suite.zip")["suiteReportVersion"])
+            self.assertEqual(3, verify_suite(destination / "suite.zip")["suiteReportVersion"])
             assets = Path(directory) / "build/release-assets"
             self.assertEqual({"suite.zip", "suite-report.json", "manifest.json", "SHA256SUMS"},
                              {path.name for path in assets.iterdir()})

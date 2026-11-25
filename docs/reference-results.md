@@ -1,10 +1,10 @@
 # Implemented Reference Experiments
 
-IntentTrace currently executes four synthetic experiment families with 12 cases.
+IntentTrace currently executes six synthetic experiment families with 19 cases.
 This page describes expected outcomes for the implemented fixtures. Actual runs
 record their full source SHA and environment. The published `v0.1.0-preview.1`
-contains only the five context and contract cases; replay and event-time cases
-were added afterward. No new release is established by this page.
+contains only the five context and contract cases; replay, event-time,
+missing-context and conflicting-values cases were added afterward. No new release is established by this page.
 
 Run all families from a clean checkout with JDK 17 and Python 3.9+:
 
@@ -22,6 +22,8 @@ checksums, record counts, and offline archive verification.
 | contract-unit-drift | Coordinated unit upgrade: 2000 ms, SATISFIED | Unit drift across versions or under the same version: 2000000 ms, VIOLATED | Cross-client outcomes for the same logical duration | `verify_contract_results.py` |
 | duplicate-replay | Unique deliveries: 8 points, SATISFIED | Repeated contribution: 11 points, VIOLATED | Deduplicate event identity: 8 points, SATISFIED | `verify_replay_results.py` |
 | event-time-ordering | Ordered delivery: technology, SATISFIED | Older arrival overwrites state, or latest event arrives too late: travel, VIOLATED | Event-time selection repairs reordered arrivals; late state remains unavailable | `verify_event_time_results.py` |
+| missing-context | Tier delivered: gold, SATISFIED | Empty read, silent default: standard, VIOLATED | Default with recorded, attributable degradation: standard, SATISFIED | `verify_missing_context_results.py` |
+| conflicting-values | Sources agree: 500, SATISFIED | Last arrival wins with a newer or same-version divergent cache value: 750, VIOLATED | Prefer primary and record the conflict: 500, SATISFIED | `verify_conflicting_values_results.py` |
 
 ## Stale Context
 
@@ -98,12 +100,47 @@ python3 tools/verify_event_time_results.py benchmarks/build/results/event-time-o
 durable state, clock skew, and repair of published decisions are not modeled.
 See [event-time ordering](event-time-ordering.md).
 
+## Missing Context
+
+**Invariant:** when required context is unavailable, the decision fails visibly
+or degrades in a recorded, attributable way. The tier source holds version 4,
+gold, before the decision. Injection makes it answer empty while healthy. The
+silent-default host uses standard with no record, VIOLATED; the recording host
+uses standard and records `context-source-empty` from `tier-service`, SATISFIED.
+
+```bash
+./gradlew :benchmarks:runMissingContextScenario --no-daemon
+python3 tools/verify_missing_context_results.py benchmarks/build/results/missing-context/results.jsonl
+```
+
+**Limit:** one empty read and one fallback policy. Timeouts, partial payloads and
+defaults that cascade across services are not modeled. See
+[missing context](missing-context.md).
+
+## Conflicting Values
+
+**Invariant:** where sources disagree on one fact, the decision follows a
+defined rule and records that it did so. The primary holds version 7, 500. A
+cache holding 750, as version 8 or under version 7, is taken silently by
+last-arrival selection, VIOLATED; preferring the primary and recording the rule
+gives 500, SATISFIED.
+
+```bash
+./gradlew :benchmarks:runConflictingValuesScenario --no-daemon
+python3 tools/verify_conflicting_values_results.py benchmarks/build/results/conflicting-values/results.jsonl
+```
+
+**Limit:** two sources, one fact, and one resolution rule. Quorum reads, vector
+clocks and replicated data types are not modeled. See
+[conflicting values](conflicting-values.md).
+
 ## Interpretation
 
 Ground-truth violation, diagnostic provenance, and system detection observations
-remain separate. All 12 fixture records have `detected = null`: no independent
-system detector is implemented. A successful comparison or mitigation is not a
-detection signal. These experiments establish reproducible synthetic mechanisms;
-they do not establish production prevalence, business impact, adoption, external
-reproduction, or a reliability improvement percentage. Missing-context and
-conflicting-values experiments remain planned.
+remain separate. All 19 fixture records have `detected = null`: ground truth
+is recorded without reference to the runtime detector, whose findings are
+compared separately in the [agreement run](detector.md#agreement-with-ground-truth).
+A successful comparison or mitigation is not a detection signal. These
+experiments establish reproducible synthetic mechanisms; they do not establish
+production prevalence, business impact, adoption, external reproduction, or a
+reliability improvement percentage.

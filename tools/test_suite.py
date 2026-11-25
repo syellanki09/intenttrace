@@ -11,7 +11,9 @@ from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 import test_run_preview as preview_fixtures
+import test_verify_conflicting_values_results as conflicting_fixtures
 import test_verify_event_time_results as event_fixtures
+import test_verify_missing_context_results as missing_fixtures
 import test_verify_replay_results as replay_fixtures
 from run_suite import collect_suite, run_suite
 from verify_suite import verify_suite
@@ -29,7 +31,13 @@ class SuiteTest(unittest.TestCase):
         self.events = event_fixtures.VerifyEventTimeTest()
         self.events.setUp()
         self.addCleanup(self.events.doCleanups)
-        for record in self.replay.records + self.events.records:
+        self.missing = missing_fixtures.VerifyMissingContextTest()
+        self.missing.setUp()
+        self.addCleanup(self.missing.doCleanups)
+        self.conflicting = conflicting_fixtures.VerifyConflictingValuesTest()
+        self.conflicting.setUp()
+        self.addCleanup(self.conflicting.doCleanups)
+        for record in self.replay.records + self.events.records + self.missing.records + self.conflicting.records:
             for field in ("runtime", "jdk", "operatingSystem"):
                 record["reproduction"][field] = self.preview.stale.records[0]["reproduction"][field]
         self.destination = Path(self.preview.stale.directory.name) / "suite"
@@ -38,8 +46,10 @@ class SuiteTest(unittest.TestCase):
     def collect(self):
         self.replay.write()
         self.events.write()
-        return collect_suite(self.preview.stale.source, self.preview.contract_path,
-                             self.replay.path, self.events.path, self.destination, "a" * 40)
+        self.missing.write()
+        self.conflicting.write()
+        return collect_suite(self.preview.stale.source, self.preview.contract_path, self.replay.path,
+                             self.events.path, self.missing.path, self.conflicting.path, self.destination, "a" * 40)
 
     def contents(self):
         with zipfile.ZipFile(self.archive) as archive:
@@ -55,11 +65,13 @@ class SuiteTest(unittest.TestCase):
             for name, value in contents.items():
                 archive.writestr(name, value)
 
-    def test_all_twelve_cases_and_existing_preview_are_preserved(self):
+    def test_all_nineteen_cases_and_existing_preview_are_preserved(self):
         report = self.collect()
         self.assertEqual(report, verify_suite(self.archive))
-        self.assertEqual([2, 3, 3, 4], [len(report["scenarios"][key]) for key in
-            ("stale-context", "contract-unit-drift", "duplicate-replay", "event-time-ordering")])
+        self.assertEqual(3, report["suiteReportVersion"])
+        self.assertEqual([2, 3, 3, 4, 3, 4], [len(report["scenarios"][key]) for key in
+            ("stale-context", "contract-unit-drift", "duplicate-replay", "event-time-ordering",
+             "missing-context", "conflicting-values")])
         self.assertTrue(all(row["detected"] is None for cases in report["scenarios"].values() for row in cases))
         self.assertEqual((self.destination / "preview/preview.zip").read_bytes(), self.contents()["preview.zip"])
 
@@ -71,31 +83,34 @@ class SuiteTest(unittest.TestCase):
         self.assertEqual(report, verify_suite(self.archive))
 
     def test_mixed_commit_runtime_and_dirty_evidence_cannot_form_suite(self):
-        for field, value in [("sourceCommitSha", "b" * 40), ("jdk", "21"),
-                             ("configuration", {"sourceDirty": "true"})]:
-            originals = [row["reproduction"][field] for row in self.events.records]
-            for row in self.events.records:
-                row["reproduction"][field] = value
-            with self.subTest(field=field), self.assertRaises(ValueError):
-                self.collect()
-            self.assertFalse(self.archive.exists())
-            for row, original in zip(self.events.records, originals):
-                row["reproduction"][field] = original
+        for records in (self.events.records, self.missing.records, self.conflicting.records):
+            for field, value in [("sourceCommitSha", "b" * 40), ("jdk", "21"),
+                                 ("configuration", {"sourceDirty": "true"})]:
+                originals = [row["reproduction"][field] for row in records]
+                for row in records:
+                    row["reproduction"][field] = value
+                with self.subTest(scenario=records[0]["reproduction"]["scenarioName"], field=field), \
+                        self.assertRaises(ValueError):
+                    self.collect()
+                self.assertFalse(self.archive.exists())
+                for row, original in zip(records, originals):
+                    row["reproduction"][field] = original
 
     def test_corrupted_and_rehashed_forged_evidence_are_rejected(self):
         self.collect()
-        contents = self.contents()
-        original = contents["duplicate-replay.jsonl"]
-        contents["duplicate-replay.jsonl"] += b" "
-        self.write(contents)
-        with self.assertRaisesRegex(ValueError, "Checksum"):
-            verify_suite(self.archive)
-        rows = [json.loads(line) for line in original.splitlines()]
-        rows[1]["status"] = "SATISFIED"
-        contents["duplicate-replay.jsonl"] = b"\n".join(json.dumps(row).encode() for row in rows)
-        self.write(contents, rehash=True)
-        with self.assertRaises(ValueError):
-            verify_suite(self.archive)
+        for name in ("duplicate-replay.jsonl", "missing-context.jsonl", "conflicting-values.jsonl"):
+            contents = self.contents()
+            original = contents[name]
+            contents[name] += b" "
+            self.write(contents)
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "Checksum"):
+                verify_suite(self.archive)
+            rows = [json.loads(line) for line in original.splitlines()]
+            rows[1]["status"] = "SATISFIED"
+            contents[name] = b"\n".join(json.dumps(row).encode() for row in rows)
+            self.write(contents, rehash=True)
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_suite(self.archive)
 
     def test_forged_suite_summary_and_version_are_rejected(self):
         self.collect()

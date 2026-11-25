@@ -63,14 +63,17 @@ class ReleaseAssetsTest(unittest.TestCase):
     def test_legacy_suite_requires_new_indexed_evidence_for_release_attachments(self):
         contents = self.fixture.contents()
         report = json.loads(contents["suite-report.json"])
-        for name in ("manifest.json", "stale-context.jsonl", "contract-unit-drift.jsonl"):
+        for name in ("manifest.json", "stale-context.jsonl", "contract-unit-drift.jsonl",
+                     "missing-context.jsonl", "conflicting-values.jsonl"):
             del contents[name]
             del report["files"][name]
+        for scenario in ("missing-context", "conflicting-values"):
+            del report["scenarios"][scenario]
         report["suiteReportVersion"] = 1
         contents["suite-report.json"] = json.dumps(report).encode()
         self.fixture.write(contents)
         self.assertEqual(1, verify_suite(self.fixture.archive)["suiteReportVersion"])
-        with self.assertRaisesRegex(ValueError, "indexed version-2"):
+        with self.assertRaisesRegex(ValueError, "complete version-3"):
             prepare_release_assets(self.fixture.archive, self.output, "a" * 40)
         self.assertFalse(self.output.exists())
 
